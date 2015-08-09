@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Client
@@ -18,6 +19,11 @@ namespace Client
         private TextWriter _writer;
         private readonly object _writerLock = new object();
         private readonly object _elevatedWriterLock = new object();
+
+        private Queue<TimeSpan> _seconds = new Queue<TimeSpan>();
+        private readonly int _messagesPer30 = 15;
+
+        private DateTime _startingTime = DateTime.Now;
 
         public BotCore(BotSettings settings)
         {
@@ -46,17 +52,28 @@ namespace Client
             string line;
             while ((line = _reader.ReadLine()) != null)
             {
+                if(line.StartsWith("PING"))
+                {
+                    StartNewHandler(null, line, MessageHandler.MessageType.PING);
+                    continue;
+                }
+
                 string[] parts = line.Split(' ');
                 if (parts[1].Equals("PRIVMSG") && parts[2].Equals(_settings["channel"]))
                 {
                     string user = parts[0].Split('!')[0].Substring(1);
                     string message = line.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 4);
 
-                    if ((bool)_settings["loggingMessages"])
-                        Logger.Log(Logger.Level.MESSAGE, "{0}: {1}", user, message);
+                    StartNewHandler(user, message, MessageHandler.MessageType.STANDARD);
                 }
             }
 
+        }
+
+        private void StartNewHandler(string user, string message, MessageHandler.MessageType type)
+        {
+            MessageHandler handler = new MessageHandler(user, message, _settings, this, type);
+            new Thread(handler.Execute).Start();
         }
 
         private void ConnectToServer()
@@ -107,6 +124,17 @@ namespace Client
             {
                 _writer.WriteLine(message);
                 _writer.Flush();
+
+                _seconds.Enqueue(DateTime.Now - _startingTime);
+
+                while (_seconds.Count > _messagesPer30)
+                {
+                    while (_seconds.First() < (DateTime.Now - _startingTime) - TimeSpan.FromSeconds(30))
+                    {
+                        _seconds.Dequeue();
+                    }
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                }
             }
             else
             {
