@@ -16,10 +16,7 @@ namespace Client
         {
             public string output;
             public ConsoleColor color;
-        }
 
-        public static class GenericLevels
-        {
             public static readonly Level LOG = new Level { output = "Log", color = ConsoleColor.Gray };
             public static readonly Level ERROR = new Level { output = "Error", color = ConsoleColor.Red };
             public static readonly Level WARNING = new Level { output = "Warning", color = ConsoleColor.Yellow };

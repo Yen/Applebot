@@ -1,11 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <settings>
   <setting>
-    <key>username</key>
-    <value>ayy</value>
+    <key>host</key>
+    <value>irc.twitch.tv</value>
   </setting>
   <setting>
-    <key>password</key>
-    <value>lmao</value>
+    <key>port</key>
+    <value>6667</value>
+  </setting>
+  <setting>
+    <key>channel</key>
+    <value>#zogzer</value>
   </setting>
 </settings>

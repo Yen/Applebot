@@ -31,16 +31,15 @@ namespace Client
 
             try
             {
-                Logger.Log(Logger.GenericLevels.LOG, "Loading settings");
-                BotSettings settings = new BotSettings("settings.xml");
+                Logger.Log(Logger.Level.LOG, "Loading settings");
+                BotSettings settings = new BotSettings("settings.xml", "usersettings.xml");
 
-                string a = settings["username"];
-                string b = settings["password"];
-                string c = settings["lol"];
+                Logger.Log(Logger.Level.LOG, "Starting bot core");
+                BotCore core = new BotCore(settings);
             }
             catch (ManualException e)
             {
-                Logger.Log(Logger.GenericLevels.EXCEPTION, "Program was excaped due to manual exception being thrown ({0})", e.Message);
+                Logger.Log(Logger.Level.EXCEPTION, "Program was excaped due to manual exception being thrown ({0})", e.Message);
             }
 
             Console.WriteLine("Program ended");
