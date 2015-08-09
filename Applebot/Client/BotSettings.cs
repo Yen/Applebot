@@ -10,7 +10,7 @@ namespace Client
     class BotSettings
     {
 
-        private Dictionary<string, string> _settings = new Dictionary<string, string>();
+        private Dictionary<string, object> _settings = new Dictionary<string, object>();
 
         public BotSettings(params string[] configs)
         {
@@ -44,13 +44,17 @@ namespace Client
             }
         }
 
-        public string this[string key]
+        public object this[string key]
         {
             get
             {
                 if (_settings.ContainsKey(key))
                     return _settings[key];
                 return null;
+            }
+            set
+            {
+                _settings[key] = value;
             }
         }
 

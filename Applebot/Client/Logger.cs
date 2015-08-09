@@ -21,6 +21,7 @@ namespace Client
             public static readonly Level ERROR = new Level { output = "Error", color = ConsoleColor.Red };
             public static readonly Level WARNING = new Level { output = "Warning", color = ConsoleColor.Yellow };
             public static readonly Level EXCEPTION = new Level { output = "Exception", color = ConsoleColor.Green };
+            public static readonly Level MESSAGE = new Level { output = "Message", color = ConsoleColor.DarkMagenta };
         }
 
         public static void Log(Level level, string format, params object[] keys)
@@ -34,7 +35,7 @@ namespace Client
                 Console.Write("{0}", level.output);
                 Console.ResetColor();
 
-                Console.WriteLine("> : {0}", buffer);
+                Console.WriteLine(">: {0}", buffer);
                 _count++;
             }
         }

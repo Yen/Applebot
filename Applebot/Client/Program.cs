@@ -34,6 +34,8 @@ namespace Client
                 Logger.Log(Logger.Level.LOG, "Loading settings");
                 BotSettings settings = new BotSettings("settings.xml", "usersettings.xml");
 
+                settings["loggingMessages"] = true;
+
                 Logger.Log(Logger.Level.LOG, "Starting bot core");
                 BotCore core = new BotCore(settings);
             }
