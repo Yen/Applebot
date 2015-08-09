@@ -23,6 +23,7 @@ namespace Client
             public static readonly Level LOG = new Level { output = "Log", color = ConsoleColor.Gray };
             public static readonly Level ERROR = new Level { output = "Error", color = ConsoleColor.Red };
             public static readonly Level WARNING = new Level { output = "Warning", color = ConsoleColor.Yellow };
+            public static readonly Level EXCEPTION = new Level { output = "Exception", color = ConsoleColor.Green };
         }
 
         public static void Log(Level level, string format, params object[] keys)
