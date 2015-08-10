@@ -84,6 +84,11 @@ namespace Client
                     if (interfaces.Contains(typeof(Command)))
                     {
                         Command command = (Command)Activator.CreateInstance(type);
+                        if (_commands.Any(i => i.Name == command.Name))
+                        {
+                            Logger.Log(Logger.Level.ERROR, "Command named \"{0}\" was already loaded, not loading new command", command.Name);
+                            break;
+                        }
                         Logger.Log(Logger.Level.LOG, "Loaded command \"{0}\" from dll \"{1}\"", command.Name, assembly.GetName().Name);
                         _commands.Add(command);
                     }
