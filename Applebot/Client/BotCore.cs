@@ -41,30 +41,47 @@ namespace Client
             if (_settings["loggingMessages"] == null)
                 _settings["loggingMessages"] = false;
 
-            ConnectToServer();
-            Logger.Log(Logger.Level.LOG, "Connected to chat server");
-
-            WriteMessage("PASS {0}", true, _settings["pass"]);
-            WriteMessage("NICK {0}", true, _settings["nick"]);
-
-            WriteMessage("JOIN {0}", true, _settings["channel"]);
-
-            string line;
-            while ((line = _reader.ReadLine()) != null)
+            while (true)
             {
-                if(line.StartsWith("PING"))
+                try
                 {
-                    StartNewHandler(null, line, MessageHandler.MessageType.PING);
-                    continue;
+                    Logger.Log(Logger.Level.LOG, "Attempting connection to chat server");
+
+                    ConnectToServer();
+
+                    Logger.Log(Logger.Level.LOG, "Connected to chat server");
+
+                    string line;
+                    while ((line = _reader.ReadLine()) != null)
+                    {
+                        if (line.StartsWith("PING"))
+                        {
+                            StartNewHandler(null, line, MessageHandler.MessageType.PING);
+                            continue;
+                        }
+
+                        string[] parts = line.Split(' ');
+
+                        if(parts[1].Equals("001"))
+                        {
+                            Logger.Log(Logger.Level.LOG, "Logged into chat server");
+                            continue;
+                        }
+
+                        if (parts[1].Equals("PRIVMSG") && parts[2].Equals(_settings["channel"]))
+                        {
+                            string user = parts[0].Split('!')[0].Substring(1);
+                            string message = line.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 4);
+
+                            StartNewHandler(user, message, MessageHandler.MessageType.STANDARD);
+                        }
+                    }
+
+                    Logger.Log(Logger.Level.WARNING, "Null data was recieved from server (login error?), reconnecting");
                 }
-
-                string[] parts = line.Split(' ');
-                if (parts[1].Equals("PRIVMSG") && parts[2].Equals(_settings["channel"]))
+                catch (SocketException)
                 {
-                    string user = parts[0].Split('!')[0].Substring(1);
-                    string message = line.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 4);
-
-                    StartNewHandler(user, message, MessageHandler.MessageType.STANDARD);
+                    Logger.Log(Logger.Level.ERROR, "Connection to server was dropped, reconnecting");
                 }
             }
 
@@ -90,6 +107,11 @@ namespace Client
 
             _reader = new StreamReader(_client.GetStream());
             _writer = new StreamWriter(_client.GetStream());
+
+            WriteMessage("PASS {0}", true, _settings["pass"]);
+            WriteMessage("NICK {0}", true, _settings["nick"]);
+
+            WriteMessage("JOIN {0}", true, _settings["channel"]);
         }
 
         public void WriteMessage(string message, bool elevated, params object[] keys)
