@@ -36,6 +36,7 @@ namespace PingCommand
         public void Execute(string user, string message, BotCore sender, BotSettings settings)
         {
             Logger.Log(Logger.Level.ERROR, "{0} || {1}", user, message);
+            sender.WriteChatMessage("Pong!", false);
         }
     }
 }
