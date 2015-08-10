@@ -25,6 +25,8 @@ namespace Client
 
         private DateTime _startingTime = DateTime.Now;
 
+        private MessageHandler _handler;
+
         public BotCore(BotSettings settings)
         {
             _settings = settings;
@@ -37,6 +39,8 @@ namespace Client
             {
                 throw new ManualException("Missing required settings for bot core to run");
             }
+
+            _handler = new MessageHandler(_settings, this);
 
             if (_settings["loggingMessages"] == null)
                 _settings["loggingMessages"] = false;
@@ -95,8 +99,7 @@ namespace Client
 
         private void StartNewHandler(string user, string message)
         {
-            MessageHandler handler = new MessageHandler(user, message, _settings, this);
-            new Thread(handler.Execute).Start();
+            new Thread(() => { _handler.Execute(user, message); }).Start();
         }
 
         private void ConnectToServer()
