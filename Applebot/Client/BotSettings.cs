@@ -7,7 +7,7 @@ using System.Xml;
 
 namespace Client
 {
-    class BotSettings
+    public class BotSettings
     {
 
         private Dictionary<string, object> _settings = new Dictionary<string, object>();

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Client
 {
-    class BotCore
+    public class BotCore
     {
 
         private BotSettings _settings;
@@ -66,13 +66,13 @@ namespace Client
 
                         string[] parts = line.Split(' ');
 
-                        if(parts[1].Equals("001"))
+                        if (parts[1].Equals("001"))
                         {
                             Logger.Log(Logger.Level.LOG, "Logged into chat server");
                             continue;
                         }
 
-                        if(parts[1].Equals("JOIN"))
+                        if (parts[1].Equals("JOIN"))
                         {
                             Logger.Log(Logger.Level.LOG, "Joined channel {0}", parts[2]);
                             continue;
@@ -83,7 +83,7 @@ namespace Client
                             string user = parts[0].Split('!')[0].Substring(1);
                             string message = line.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 4);
 
-                            StartNewHandler(user, message);
+                            _handler.Execute(user, message);
                         }
                     }
 
@@ -95,11 +95,6 @@ namespace Client
                 }
             }
 
-        }
-
-        private void StartNewHandler(string user, string message)
-        {
-            new Thread(() => { _handler.Execute(user, message); }).Start();
         }
 
         private void ConnectToServer()

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Client
 {
-    static class Logger
+    public static class Logger
     {
 
         private static readonly object _lock = new object();
@@ -22,6 +22,7 @@ namespace Client
             public static readonly Level WARNING = new Level { output = "Warning", color = ConsoleColor.Yellow };
             public static readonly Level EXCEPTION = new Level { output = "Exception", color = ConsoleColor.Green };
             public static readonly Level MESSAGE = new Level { output = "Message", color = ConsoleColor.DarkMagenta };
+            public static readonly Level COMMAND = new Level { output = "Command", color = ConsoleColor.DarkGreen };
         }
 
         public static void Log(Level level, string format, params object[] keys)
