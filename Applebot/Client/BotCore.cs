@@ -56,7 +56,7 @@ namespace Client
                     {
                         if (line.StartsWith("PING"))
                         {
-                            StartNewHandler(null, line, MessageHandler.MessageType.PING);
+                            new Thread(() => { WriteMessage("PONG apple", true); }).Start();
                             continue;
                         }
 
@@ -68,12 +68,18 @@ namespace Client
                             continue;
                         }
 
+                        if(parts[1].Equals("JOIN"))
+                        {
+                            Logger.Log(Logger.Level.LOG, "Joined channel {0}", parts[2]);
+                            continue;
+                        }
+
                         if (parts[1].Equals("PRIVMSG") && parts[2].Equals(_settings["channel"]))
                         {
                             string user = parts[0].Split('!')[0].Substring(1);
                             string message = line.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 4);
 
-                            StartNewHandler(user, message, MessageHandler.MessageType.STANDARD);
+                            StartNewHandler(user, message);
                         }
                     }
 
@@ -87,9 +93,9 @@ namespace Client
 
         }
 
-        private void StartNewHandler(string user, string message, MessageHandler.MessageType type)
+        private void StartNewHandler(string user, string message)
         {
-            MessageHandler handler = new MessageHandler(user, message, _settings, this, type);
+            MessageHandler handler = new MessageHandler(user, message, _settings, this);
             new Thread(handler.Execute).Start();
         }
 
@@ -114,7 +120,15 @@ namespace Client
             WriteMessage("JOIN {0}", true, _settings["channel"]);
         }
 
-        public void WriteMessage(string message, bool elevated, params object[] keys)
+        public void WriteChatMessage(string message, bool elevated, params object[] keys)
+        {
+            string buffer = string.Format(message, keys);
+
+            WriteMessage("PRIVMSG {0} {1}", elevated, _settings["channel"], buffer);
+        }
+
+
+        private void WriteMessage(string message, bool elevated, params object[] keys)
         {
             string buffer = string.Format(message, keys);
 
