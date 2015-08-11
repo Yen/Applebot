@@ -180,5 +180,10 @@ namespace Client
             }
         }
 
+        public void ReloadCommands()
+        {
+            _handler.LoadCommands();
+        }
+
     }
 }

@@ -20,7 +20,7 @@ namespace Client
 
         // Just for testing
 
-        public class PrintFunction : Function
+        public class Print : Function
         {
             public string Expression
             {
@@ -34,7 +34,7 @@ namespace Client
             {
                 get
                 {
-                    return "Print Function";
+                    return "Print";
                 }
             }
 
@@ -54,6 +54,40 @@ namespace Client
                 }
 
                 Logger.Log(Logger.Level.INPUT, builder.ToString());
+            }
+        }
+
+        public class ReloadCommands : Function
+        {
+            public string Expression
+            {
+                get
+                {
+                    return "reload-commands";
+                }
+            }
+
+            public string Name
+            {
+                get
+                {
+                    return "Reload Commands";
+                }
+            }
+
+            public void Execute(BotCore core, BotSettings settings, params string[] args)
+            {
+                Logger.Log(Logger.Level.WARNING, "Are you sure you want to reload commands, all data within current command instances will be lost? y/n");
+                char input = Console.ReadLine()[0];
+                if((input == 'y') || (input == 'Y'))
+                {
+                    Logger.Log(Logger.Level.INPUT, "Reloading commands");
+                    core.ReloadCommands();
+                }
+                else
+                {
+                    Logger.Log(Logger.Level.INPUT, "Command reloading aborted");
+                }
             }
         }
 
