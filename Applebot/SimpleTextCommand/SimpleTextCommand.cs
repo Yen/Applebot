@@ -16,10 +16,11 @@ namespace SimpleTextCommand
         private XmlNodeList _patterns;
         private string _configLocation;
         private XmlDocument _settings;
+        private XmlNode _rootNode;
 
         public SimpleTextCommand()
         {
-            _expressions.Add(new Regex("^!text"));
+            _expressions.Add(new Regex("^!text\\b"));
 
             _configLocation = "SimpleTextCommand.xml";
 
@@ -27,8 +28,8 @@ namespace SimpleTextCommand
 
             if (!File.Exists(_configLocation)) {
                 Logger.Log(Logger.Level.WARNING, "SimpleTextCommand config not found, one will be created");
-                XmlNode initRootNode = _settings.CreateElement("patterns");
-                _settings.AppendChild(initRootNode);
+                _rootNode = _settings.CreateElement("patterns");
+                _settings.AppendChild(_rootNode);
 
                 XmlNode samplePattern = _settings.CreateElement("pattern");
 
@@ -40,11 +41,10 @@ namespace SimpleTextCommand
                 sampleResponse.Value = "Responding to SimpleTextCommand \"check\".";
                 samplePattern.Attributes.Append(sampleResponse);
 
-                initRootNode.AppendChild(samplePattern);
+                _rootNode.AppendChild(samplePattern);
 
                 _settings.Save(_configLocation);
             }
-
 
             try
             {
@@ -55,14 +55,14 @@ namespace SimpleTextCommand
                 Logger.Log(Logger.Level.ERROR, "Couldn't load SimpleTextCommand config file");
             }
 
-            XmlNodeList patterns = _settings.SelectNodes("/patterns/pattern");
-            _patterns = patterns;
+            _rootNode = _settings.FirstChild;
+            _patterns = _settings.SelectNodes("/patterns/pattern");
 
-            foreach(XmlNode node in patterns)
+            foreach(XmlNode node in _patterns)
             {
                 string trigger = node.Attributes["trigger"].Value;
                 Logger.Log(Logger.Level.LOG, "SimpleTextCommand: Adding pattern \"" + trigger + "\"");
-                _expressions.Add(new Regex("^!" + trigger + "\b"));
+                _expressions.Add(new Regex("^!" + trigger + "\\b"));
             }
 
         }
@@ -83,6 +83,34 @@ namespace SimpleTextCommand
             }
         }
 
+        private void UpdateXml()
+        {
+            _patterns = _settings.SelectNodes("/patterns/pattern");
+            _settings.Save(_configLocation);
+        }
+
+        private void AddPattern(string trigger, string response)
+        {
+            lock (_settings)
+            {
+                XmlNode samplePattern = _settings.CreateElement("pattern");
+
+                XmlAttribute sampleTrigger = _settings.CreateAttribute("trigger");
+                sampleTrigger.Value = trigger;
+                samplePattern.Attributes.Append(sampleTrigger);
+
+                XmlAttribute sampleResponse = _settings.CreateAttribute("response");
+                sampleResponse.Value = response;
+                samplePattern.Attributes.Append(sampleResponse);
+
+                _rootNode.AppendChild(samplePattern);
+
+                UpdateXml();
+                _expressions.Add(new Regex("^!" + trigger + "\\b"));
+            }
+            
+        }
+
         public void Execute(string user, string message, BotCore sender, BotSettings settings)
         {
             string[] parts = message.Split(' ');
@@ -98,16 +126,27 @@ namespace SimpleTextCommand
                     return;
                 }
 
-                sender.WriteChatMessage("Administrative command placeholder", false);
+                //if (parts.Length < 3)
+                //{
+                //    sender.WriteChatMessage("Missing parameters.", false);
+                //    return;
+                //}
+
+                AddPattern(parts[2], parts[3]);
+
+                sender.WriteChatMessage("Added pattern " + parts[2] + ".", false);
                 return;
             }
 
-            foreach (XmlNode node in _patterns)
+            lock (_patterns)
             {
-                string trigger = node.Attributes["trigger"].Value;
-                if (trigger == message.Substring(1))
+                foreach (XmlNode node in _patterns)
                 {
-                    sender.WriteChatMessage(node.Attributes["response"].Value, false);
+                    string trigger = node.Attributes["trigger"].Value;
+                    if (trigger == message.Substring(1))
+                    {
+                        sender.WriteChatMessage(node.Attributes["response"].Value, false);
+                    }
                 }
             }
 
