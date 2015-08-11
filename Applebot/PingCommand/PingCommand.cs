@@ -14,7 +14,7 @@ namespace PingCommand
 
         public PingCommand()
         {
-            _expressions.Add(new Regex("^!ping"));
+            _expressions.Add(new Regex("^!ping\\b"));
         }
 
         public List<Regex> Expressions
