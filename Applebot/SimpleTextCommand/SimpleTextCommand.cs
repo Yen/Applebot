@@ -29,19 +29,8 @@ namespace SimpleTextCommand
             if (!File.Exists(_configLocation)) {
                 Logger.Log(Logger.Level.WARNING, "SimpleTextCommand config not found, one will be created");
                 _rootNode = _settings.CreateElement("patterns");
+
                 _settings.AppendChild(_rootNode);
-
-                XmlNode samplePattern = _settings.CreateElement("pattern");
-
-                XmlAttribute sampleTrigger = _settings.CreateAttribute("trigger");
-                sampleTrigger.Value = "check";
-                samplePattern.Attributes.Append(sampleTrigger);
-
-                XmlAttribute sampleResponse = _settings.CreateAttribute("response");
-                sampleResponse.Value = "Responding to SimpleTextCommand \"check\".";
-                samplePattern.Attributes.Append(sampleResponse);
-
-                _rootNode.AppendChild(samplePattern);
 
                 _settings.Save(_configLocation);
             }
@@ -145,7 +134,6 @@ namespace SimpleTextCommand
             if (parts[0] == "!text")
             {
                 string owner = settings["channel"].ToString().Substring(1);
-                Logger.Log(Logger.Level.MESSAGE, "owner is {0}", owner);
 
                 if (user != owner)
                 {
