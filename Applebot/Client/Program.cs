@@ -37,8 +37,11 @@ namespace Client
 
                 settings["loggingMessages"] = true;
 
+                Logger.Log(Logger.Level.LOG, "Initialising user manager");
+                UserManager manager = new UserManager(settings);
+
                 Logger.Log(Logger.Level.LOG, "Initialising bot core");
-                BotCore core = new BotCore(settings);
+                BotCore core = new BotCore(settings, manager);
 
                 Logger.Log(Logger.Level.LOG, "Initialising input handler");
                 InputHandler input = new InputHandler(core, settings);

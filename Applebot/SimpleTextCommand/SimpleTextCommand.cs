@@ -127,7 +127,7 @@ namespace SimpleTextCommand
             
         }
 
-        public void Execute(string user, string message, BotCore sender, BotSettings settings)
+        public void Execute(string user, string message, BotCore sender, BotSettings settings, UserManager manager)
         {
             string[] parts = message.Split(' ');
 

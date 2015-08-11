@@ -26,10 +26,12 @@ namespace Client
         private DateTime _startingTime = DateTime.Now;
 
         private MessageHandler _handler;
+        private UserManager _manager;
 
-        public BotCore(BotSettings settings)
+        public BotCore(BotSettings settings, UserManager manager)
         {
             _settings = settings;
+            _manager = manager;
 
             if ((_settings["nick"] == null) ||
                 (_settings["pass"] == null) ||
@@ -40,7 +42,7 @@ namespace Client
                 throw new ManualException("Missing required settings for bot core to run");
             }
 
-            _handler = new MessageHandler(_settings, this);
+            _handler = new MessageHandler(_settings, this, _manager);
 
             if (_settings["loggingMessages"] == null)
                 _settings["loggingMessages"] = false;

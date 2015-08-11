@@ -13,6 +13,6 @@ namespace Client
 
         List<Regex> Expressions { get; }
 
-        void Execute(string user, string message, BotCore sender, BotSettings settings);
+        void Execute(string user, string message, BotCore sender, BotSettings settings, UserManager manager);
     }
 }

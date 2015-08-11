@@ -33,7 +33,7 @@ namespace PingCommand
             }
         }
 
-        public void Execute(string user, string message, BotCore sender, BotSettings settings)
+        public void Execute(string user, string message, BotCore sender, BotSettings settings, UserManager manager)
         {
             sender.WriteChatMessage("Pong!", false);
         }

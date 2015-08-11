@@ -14,14 +14,16 @@ namespace Client
     {
         private BotSettings _settings;
         private BotCore _sender;
+        private UserManager _manager;
 
         private List<Command> _commands = new List<Command>();
         private object _commandLock = new object();
 
-        public MessageHandler(BotSettings settings, BotCore sender)
+        public MessageHandler(BotSettings settings, BotCore sender, UserManager manager)
         {
             _settings = settings;
             _sender = sender;
+            _manager = manager;
 
             LoadCommands();
         }
@@ -37,7 +39,7 @@ namespace Client
                 if (command != null)
                 {
                     Logger.Log(Logger.Level.COMMAND, "User \"{0}\" triggered command ({1})", user, command.Name);
-                    new Thread(() => { command.Execute(user, message, _sender, _settings); }).Start();
+                    new Thread(() => { command.Execute(user, message, _sender, _settings, _manager); }).Start();
                 }
             }
         }
