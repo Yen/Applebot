@@ -20,6 +20,19 @@ namespace Client
             _settings = settings;
 
             //TODO: load functions
+            Type[] defaults = typeof(DefaultFunctions).GetNestedTypes();
+            foreach (Type type in defaults)
+            {
+                Type[] interfaces = type.GetInterfaces();
+                if (interfaces.Contains(typeof(Function)))
+                {
+                    Function function = (Function)Activator.CreateInstance(type);
+                    Logger.Log(Logger.Level.LOG, "Loaded function \"{0}\" from default functions list", function.Name);
+                    _functions.Add(function);
+                    continue;
+                }
+                Logger.Log(Logger.Level.WARNING, "Type \"{0}\" in default functions does not implement Function, remove it", type.Name);
+            }
         }
 
         private Function Check(string expression)
