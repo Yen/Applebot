@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace Client
 {
@@ -21,9 +25,33 @@ namespace Client
 
         public void InvokeRefresh()
         {
-            lock(this)
+            lock (this)
             {
-                // TODO: fetch user list http://tmi.twitch.tv/group/user/zogzer/chatters
+                XmlDocument data = new XmlDocument();
+
+                using (WebClient client = new WebClient())
+                {
+                    byte[] buffer = client.DownloadData("http://tmi.twitch.tv/group/user/" + _settings["channel"].ToString().Substring(1).ToLower() + "/chatters");
+                    if (buffer == null)
+                    {
+                        Logger.Log(Logger.Level.WARNING, "Error fetching tmi data, operator list update skipped");
+                        return;
+                    }
+                    XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(buffer, XmlDictionaryReaderQuotas.Max);
+                    XElement element = XElement.Load(reader);
+
+                    data.LoadXml(element.ToString());
+                }
+
+                _operators.Clear();
+
+                XmlNodeList moderators = data.SelectNodes("//chatters/moderators//item");
+
+                foreach (XmlNode node in moderators)
+                {
+                    _operators.Add(node.InnerXml);
+                }
+
             }
         }
 
