@@ -122,7 +122,7 @@ namespace Client
         {
             string buffer = string.Format(message, keys);
 
-            WriteMessage("PRIVMSG {0} {1}", elevated, _settings["channel"], buffer);
+            WriteMessage("PRIVMSG {0} :{1}", elevated, _settings["channel"], buffer);
 
             Logger.Log(Logger.Level.SENT, message);
         }
