@@ -89,10 +89,31 @@ namespace SimpleTextCommand
             _settings.Save(_configLocation);
         }
 
-        private void AddPattern(string trigger, string response)
+        private bool RemovePattern(string trigger)
+        {
+            bool replaced = false;
+
+            XmlNodeList existingMatches = _settings.SelectNodes("/patterns/pattern[@trigger='" + trigger + "']");
+            if (existingMatches.Count > 0)
+            {
+                foreach (XmlNode node in existingMatches)
+                {
+                    _rootNode.RemoveChild(node);
+                }
+                replaced = true;
+            }
+
+            UpdateXml();
+            return replaced;
+        }
+
+        private bool AddPattern(string trigger, string response)
         {
             lock (_settings)
             {
+                bool replaced = RemovePattern(trigger);
+
+
                 XmlNode samplePattern = _settings.CreateElement("pattern");
 
                 XmlAttribute sampleTrigger = _settings.CreateAttribute("trigger");
@@ -106,7 +127,13 @@ namespace SimpleTextCommand
                 _rootNode.AppendChild(samplePattern);
 
                 UpdateXml();
-                _expressions.Add(new Regex("^!" + trigger + "\\b"));
+
+                if (!replaced)
+                {
+                    _expressions.Add(new Regex("^!" + trigger + "\\b"));
+                }
+
+                return replaced;
             }
             
         }
@@ -126,16 +153,59 @@ namespace SimpleTextCommand
                     return;
                 }
 
-                //if (parts.Length < 3)
-                //{
-                //    sender.WriteChatMessage("Missing parameters.", false);
-                //    return;
-                //}
+                if (parts.Length < 2)
+                {
+                    sender.WriteChatMessage("Missing parameters. :v", false);
+                    return;
+                }
 
-                AddPattern(parts[2], parts[3]);
+                if (parts[1] == "remove")
+                {
+                    if (parts.Length < 3)
+                    {
+                        sender.WriteChatMessage("Syntax: !text remove [command]", false);
+                        return;
+                    }
 
-                sender.WriteChatMessage("Added pattern " + parts[2] + ".", false);
-                return;
+                    bool replaced = RemovePattern(parts[2]);
+
+                    if (replaced)
+                    {
+                        sender.WriteChatMessage("Removed pattern " + parts[2] + ".", false);
+                    }
+                    else
+                    {
+                        sender.WriteChatMessage("Pattern " + parts[2] + " doesn't exist. :v", false);
+                    }
+
+                    return;
+
+                }
+
+                if (parts[1] == "add")
+                {
+                    if (parts.Length < 4)
+                    {
+                        sender.WriteChatMessage("Syntax: !text add [command] [response]", false);
+                        return;
+                    }
+
+                    string response = message.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 3);
+                    Logger.Log(Logger.Level.MESSAGE, "response is " + response);
+                    bool replaced = AddPattern(parts[2], response);
+
+                    if (replaced)
+                    {
+                        sender.WriteChatMessage("Replaced pattern " + parts[2] + ".", false);
+                    }
+                    else
+                    {
+                        sender.WriteChatMessage("Added pattern " + parts[2] + ".", false);
+                    }
+
+                    return;
+                }
+                
             }
 
             lock (_patterns)
