@@ -61,8 +61,8 @@ namespace SimpleTextCommand
             foreach(XmlNode node in patterns)
             {
                 string trigger = node.Attributes["trigger"].Value;
-                Logger.Log(Logger.Level.MESSAGE, "SimpleTextCommand: Adding pattern \"" + trigger + "\"");
-                _expressions.Add(new Regex("^!" + trigger));
+                Logger.Log(Logger.Level.LOG, "SimpleTextCommand: Adding pattern \"" + trigger + "\"");
+                _expressions.Add(new Regex("^!" + trigger + "\b"));
             }
 
         }
