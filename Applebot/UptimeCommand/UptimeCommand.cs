@@ -48,7 +48,6 @@ namespace UptimeCommand
                 //owner = "witwix";
 
                 string rawData = new WebClient().DownloadString("https://api.twitch.tv/kraken/streams/" + owner);
-                Console.WriteLine("retrieved");
 
                 XmlDocument parsedData = new XmlDocument();
 
