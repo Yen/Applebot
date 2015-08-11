@@ -41,45 +41,42 @@ namespace UptimeCommand
         {
             //TODO: highlight tracking?
 
-            try
+            string[] parts = message.Split(' ');
+            string owner = settings["channel"].ToString().Substring(1);
+            //owner = "witwix";
+
+            string rawData = new WebClient().DownloadString("https://api.twitch.tv/kraken/streams/" + owner);
+
+            XmlDocument parsedData = new XmlDocument();
+
+            using (var reader = JsonReaderWriterFactory.CreateJsonReader(Encoding.UTF8.GetBytes(rawData), XmlDictionaryReaderQuotas.Max))
             {
-                string[] parts = message.Split(' ');
-                string owner = settings["channel"].ToString().Substring(1);
-                //owner = "witwix";
+                XElement xml = XElement.Load(reader);
+                parsedData.LoadXml(xml.ToString());
+            }
 
-                string rawData = new WebClient().DownloadString("https://api.twitch.tv/kraken/streams/" + owner);
+            XmlNode bufferNode = parsedData.SelectSingleNode("//stream/created_at");
 
-                XmlDocument parsedData = new XmlDocument();
-
-                using (var reader = JsonReaderWriterFactory.CreateJsonReader(Encoding.UTF8.GetBytes(rawData), XmlDictionaryReaderQuotas.Max))
-                {
-                    XElement xml = XElement.Load(reader);
-                    parsedData.LoadXml(xml.ToString());
-                }
-
-                XmlNode bufferNode = parsedData.SelectSingleNode("//stream/created_at");
-                string upSince = bufferNode.InnerText;
-
-                DateTime dt = Convert.ToDateTime(upSince);
-                TimeSpan ts = DateTime.Now.Subtract(dt);
-
-                double numMinutes = ts.TotalMinutes;
-
-                string hours = Math.Floor(numMinutes / 60).ToString();
-                string minutes = Math.Floor(numMinutes % 60).ToString();
-                string seconds = Math.Floor(numMinutes % 60).ToString();
-
-                string output = String.Format("Live for {0} {1}, {2} {3}.", hours, hours == "1" ? "hour" : "hours", minutes, minutes == "1" ? "minute" : "minutes");
-                sender.WriteChatMessage(output, false);
+            if (bufferNode == null)
+            {
+                Logger.Log(Logger.Level.WARNING, "API returned null stream node (stream offline?)");
+                sender.WriteChatMessage("Error retrieving stream info. :v", false);
                 return;
             }
-            catch (Exception ex)
-            {
-                Logger.Log(Logger.Level.ERROR, ex.ToString());
-            }
 
-            sender.WriteChatMessage("Couldn't retrieve data. :v", false); 
+            string upSince = bufferNode.InnerText;
 
+            DateTime dt = Convert.ToDateTime(upSince);
+            TimeSpan ts = DateTime.Now.Subtract(dt);
+
+            double numMinutes = ts.TotalMinutes;
+
+            string hours = Math.Floor(numMinutes / 60).ToString();
+            string minutes = Math.Floor(numMinutes % 60).ToString();
+            string seconds = Math.Floor(numMinutes % 60).ToString();
+
+            string output = String.Format("Live for {0} {1}, {2} {3}.", hours, hours == "1" ? "hour" : "hours", minutes, minutes == "1" ? "minute" : "minutes");
+            sender.WriteChatMessage(output, false);
         }
     }
 }
