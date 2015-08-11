@@ -24,6 +24,7 @@ namespace Client
             public static readonly Level MESSAGE = new Level { output = "Message", color = ConsoleColor.DarkMagenta };
             public static readonly Level COMMAND = new Level { output = "Command", color = ConsoleColor.DarkGreen };
             public static readonly Level SENT = new Level { output = "Sent", color = ConsoleColor.DarkCyan };
+            public static readonly Level INPUT = new Level { output = "Input", color = ConsoleColor.DarkYellow };
         }
 
         public static void Log(Level level, string format, params object[] keys)

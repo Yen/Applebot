@@ -44,7 +44,10 @@ namespace Client
 
             if (_settings["loggingMessages"] == null)
                 _settings["loggingMessages"] = false;
+        }
 
+        public void Run()
+        {
             while (true)
             {
                 try
@@ -94,7 +97,6 @@ namespace Client
                     Logger.Log(Logger.Level.ERROR, "Connection to server was dropped, reconnecting");
                 }
             }
-
         }
 
         private void ConnectToServer()
