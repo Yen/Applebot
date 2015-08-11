@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Client
@@ -36,8 +37,15 @@ namespace Client
 
                 settings["loggingMessages"] = true;
 
-                Logger.Log(Logger.Level.LOG, "Starting bot core");
+                Logger.Log(Logger.Level.LOG, "Initialising bot core");
                 BotCore core = new BotCore(settings);
+
+                Logger.Log(Logger.Level.LOG, "Initialising input handler");
+                InputHandler input = new InputHandler(core, settings);
+                new Thread(input.Run).Start();
+
+                Logger.Log(Logger.Level.LOG, "Running bot core loop");
+                core.Run();
             }
             catch (ManualException e)
             {

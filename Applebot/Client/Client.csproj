@@ -46,6 +46,8 @@
     <Compile Include="BotCore.cs" />
     <Compile Include="BotSettings.cs" />
     <Compile Include="Command.cs" />
+    <Compile Include="Function.cs" />
+    <Compile Include="InputHandler.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="MessageHandler.cs" />
     <Compile Include="Program.cs" />
