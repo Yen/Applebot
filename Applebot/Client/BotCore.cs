@@ -50,7 +50,7 @@ namespace Client
 
         public void Run()
         {
-                        while (true)
+            while (true)
             {
                 try
                 {

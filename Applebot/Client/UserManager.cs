@@ -13,6 +13,16 @@ namespace Client
     public class UserManager
     {
 
+        public struct User
+        {
+            public bool IsElevated { get; private set; }
+
+            public static User GenerateUser(bool elevated)
+            {
+                return new User { IsElevated = elevated };
+            }
+        }
+
         private BotSettings _settings;
         private List<string> _operators = new List<string>();
         private DateTime _lastUpdate;
@@ -62,7 +72,7 @@ namespace Client
             }
         }
 
-        public bool IsUserElevated(string user)
+        public User GetUserInfo(string user)
         {
             lock(_updateLock)
             {
@@ -77,12 +87,17 @@ namespace Client
 
             // Host are always elevated even if twitch api is derp
             if (buffer.Equals(((string)_settings["channel"]).ToLower().Substring(1)))
-                return true;
+                return User.GenerateUser(true);
 
             if (_operators.Contains(buffer))
-                return true;
+                return User.GenerateUser(true);
 
-            return false;
+            return User.GenerateUser(false);
+        }
+
+        public User this[string user]
+        {
+            get { return GetUserInfo(user); }
         }
 
     }
