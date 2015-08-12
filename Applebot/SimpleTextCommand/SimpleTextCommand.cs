@@ -81,18 +81,22 @@ namespace SimpleTextCommand
         private bool RemovePattern(string trigger)
         {
             bool replaced = false;
-
-            XmlNodeList existingMatches = _settings.SelectNodes("/patterns/pattern[@trigger='" + trigger + "']");
-            if (existingMatches.Count > 0)
+            
+            lock (_settings)
             {
-                foreach (XmlNode node in existingMatches)
+                XmlNodeList existingMatches = _settings.SelectNodes("/patterns/pattern[@trigger='" + trigger + "']");
+                if (existingMatches.Count > 0)
                 {
-                    _rootNode.RemoveChild(node);
+                    foreach (XmlNode node in existingMatches)
+                    {
+                        _rootNode.RemoveChild(node);
+                    }
+                    replaced = true;
                 }
-                replaced = true;
+
+                UpdateXml();
             }
 
-            UpdateXml();
             return replaced;
         }
 
