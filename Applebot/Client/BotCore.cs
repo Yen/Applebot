@@ -128,7 +128,7 @@ namespace Client
 
             WriteMessage("PRIVMSG {0} :{1}", elevated, _settings["channel"], buffer);
 
-            Logger.Log(Logger.Level.SENT, message);
+            Logger.Log(Logger.Level.SENT, buffer);
         }
 
 

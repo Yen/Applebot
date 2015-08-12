@@ -15,16 +15,23 @@ namespace Client
 
         private BotSettings _settings;
         private List<string> _operators = new List<string>();
+        private DateTime _lastUpdate;
+        private TimeSpan _updateInterval = TimeSpan.FromSeconds(30);
+        private readonly object _updateLock = new object();
 
         public UserManager(BotSettings settings)
         {
             _settings = settings;
+
+            _lastUpdate = DateTime.UtcNow;
 
             InvokeRefresh();
         }
 
         public void InvokeRefresh()
         {
+            Logger.Log(Logger.Level.LOG, "Updating operator list");
+
             lock (this)
             {
                 XmlDocument data = new XmlDocument();
@@ -57,6 +64,15 @@ namespace Client
 
         public bool IsUserElevated(string user)
         {
+            lock(_updateLock)
+            {
+                if (DateTime.UtcNow.Subtract(_updateInterval) > _lastUpdate)
+                {
+                    InvokeRefresh();
+                    _lastUpdate = DateTime.UtcNow;
+                }
+            }
+
             string buffer = user.ToLower();
 
             // Host are always elevated even if twitch api is derp
