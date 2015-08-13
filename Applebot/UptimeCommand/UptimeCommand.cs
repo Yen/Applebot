@@ -14,7 +14,7 @@ namespace UptimeCommand
 {
     public class UptimeCommand : Command
     {
-        public UptimeCommand(BotCore core, BotSettings settings, UserManager manager) : base("Uptime Command", core, settings, manager)
+        public UptimeCommand(CommandData data) : base("Uptime Command", data)
         {
             Expressions.Add(new Regex("^!uptime\\b"));
         }
@@ -24,7 +24,7 @@ namespace UptimeCommand
             //TODO: highlight tracking?
 
             string[] parts = args.Content.Split(' ');
-            string owner = _settings["channel"].ToString().Substring(1);
+            string owner = _data.Settings["channel"].ToString().Substring(1);
             //owner = "witwix";
 
             string rawData = new WebClient().DownloadString("https://api.twitch.tv/kraken/streams/" + owner);
@@ -42,7 +42,7 @@ namespace UptimeCommand
             if (bufferNode == null)
             {
                 Logger.Log(Logger.Level.WARNING, "API returned null stream node (stream offline?)");
-                _core.WriteChatMessage("Error retrieving stream info. :v", false);
+                _data.Core.WriteChatMessage("Error retrieving stream info. :v", false);
                 return;
             }
 
@@ -58,7 +58,7 @@ namespace UptimeCommand
             string seconds = Math.Floor(numMinutes % 60).ToString();
 
             string output = String.Format("Live for {0} {1}, {2} {3}.", hours, hours == "1" ? "hour" : "hours", minutes, minutes == "1" ? "minute" : "minutes");
-            _core.WriteChatMessage(output, false);
+            _data.Core.WriteChatMessage(output, false);
         }
     }
 }

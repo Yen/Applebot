@@ -12,9 +12,21 @@ namespace Client
         public string User { get; private set; }
         public string Content { get; private set; }
 
-        public static MessageArgs GenerateArgs(string user, string content)
+        public static MessageArgs Generate(string user, string content)
         {
             return new MessageArgs { User = user, Content = content };
+        }
+    }
+
+    public struct CommandData
+    {
+        public BotCore Core { get; private set; }
+        public BotSettings Settings { get; private set; }
+        public UserManager Manager { get; private set; }
+
+        public static CommandData Generate(BotCore core, BotSettings settings, UserManager manager)
+        {
+            return new CommandData { Core = core, Settings = settings, Manager = manager };
         }
     }
 
@@ -23,17 +35,13 @@ namespace Client
         public string Name { get; private set; }
         public List<Regex> Expressions { get; private set; }
 
-        protected BotCore _core;
-        protected BotSettings _settings;
-        protected UserManager _manager;
+        protected CommandData _data { get; private set; }
 
-        public Command(string name, BotCore core, BotSettings settings, UserManager manager)
+        public Command(string name, CommandData data)
         {
             Name = name;
 
-            _core = core;
-            _settings = settings;
-            _manager = manager;
+            _data = data;
 
             Expressions = new List<Regex>();
         }

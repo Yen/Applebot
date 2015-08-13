@@ -17,7 +17,7 @@ namespace SimpleTextCommand
         private XmlDocument _commandSettings;
         private XmlNode _rootNode;
 
-        public SimpleTextCommand(BotCore core, BotSettings settings, UserManager manager) : base("Simple Text Command", core, settings, manager)
+        public SimpleTextCommand(CommandData data) : base("Simple Text Command", data)
         {
             Expressions.Add(new Regex("^!text\\b"));
 
@@ -120,7 +120,7 @@ namespace SimpleTextCommand
 
             if (parts[0] == "!text")
             {
-                string owner = _settings["channel"].ToString().Substring(1);
+                string owner = _data.Settings["channel"].ToString().Substring(1);
 
                 if (args.User != owner)
                 {
@@ -130,7 +130,7 @@ namespace SimpleTextCommand
 
                 if (parts.Length < 2)
                 {
-                    _core.WriteChatMessage("Missing parameters. :v", false);
+                    _data.Core.WriteChatMessage("Missing parameters. :v", false);
                     return;
                 }
 
@@ -138,7 +138,7 @@ namespace SimpleTextCommand
                 {
                     if (parts.Length < 3)
                     {
-                        _core.WriteChatMessage("Syntax: !text remove [command]", false);
+                        _data.Core.WriteChatMessage("Syntax: !text remove [command]", false);
                         return;
                     }
 
@@ -146,11 +146,11 @@ namespace SimpleTextCommand
 
                     if (replaced)
                     {
-                        _core.WriteChatMessage("Removed pattern " + parts[2] + ".", false);
+                        _data.Core.WriteChatMessage("Removed pattern " + parts[2] + ".", false);
                     }
                     else
                     {
-                        _core.WriteChatMessage("Pattern " + parts[2] + " doesn't exist. :v", false);
+                        _data.Core.WriteChatMessage("Pattern " + parts[2] + " doesn't exist. :v", false);
                     }
 
                     return;
@@ -161,7 +161,7 @@ namespace SimpleTextCommand
                 {
                     if (parts.Length < 4)
                     {
-                        _core.WriteChatMessage("Syntax: !text add [command] [response]", false);
+                        _data.Core.WriteChatMessage("Syntax: !text add [command] [response]", false);
                         return;
                     }
 
@@ -171,11 +171,11 @@ namespace SimpleTextCommand
 
                     if (replaced)
                     {
-                        _core.WriteChatMessage("Replaced pattern " + parts[2] + ".", false);
+                        _data.Core.WriteChatMessage("Replaced pattern " + parts[2] + ".", false);
                     }
                     else
                     {
-                        _core.WriteChatMessage("Added pattern " + parts[2] + ".", false);
+                        _data.Core.WriteChatMessage("Added pattern " + parts[2] + ".", false);
                     }
 
                     return;
@@ -190,7 +190,7 @@ namespace SimpleTextCommand
                     string trigger = node.Attributes["trigger"].Value;
                     if (trigger == args.Content.Substring(1))
                     {
-                        _core.WriteChatMessage(node.Attributes["response"].Value, false);
+                        _data.Core.WriteChatMessage(node.Attributes["response"].Value, false);
                     }
                 }
             }
