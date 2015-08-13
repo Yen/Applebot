@@ -7,12 +7,37 @@ using System.Threading.Tasks;
 
 namespace Client
 {
-    public interface Command
+    public struct MessageArgs
     {
-        string Name { get; }
+        public string User { get; private set; }
+        public string Content { get; private set; }
 
-        List<Regex> Expressions { get; }
+        public static MessageArgs GenerateArgs(string user, string content)
+        {
+            return new MessageArgs { User = user, Content = content };
+        }
+    }
 
-        void Execute(string user, string message, BotCore sender, BotSettings settings, UserManager manager);
+    public abstract class Command
+    {
+        public string Name { get; private set; }
+        public List<Regex> Expressions { get; private set; }
+
+        protected BotCore _core;
+        protected BotSettings _settings;
+        protected UserManager _manager;
+
+        public Command(string name, BotCore core, BotSettings settings, UserManager manager)
+        {
+            Name = name;
+
+            _core = core;
+            _settings = settings;
+            _manager = manager;
+
+            Expressions = new List<Regex>();
+        }
+
+        public abstract void Execute(MessageArgs message);
     }
 }

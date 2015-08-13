@@ -10,32 +10,14 @@ namespace PingCommand
 {
     public class PingCommand : Command
     {
-        private List<Regex> _expressions = new List<Regex>();
-
-        public PingCommand()
+        public PingCommand(BotCore core, BotSettings settings, UserManager manager) : base("Ping Command", core, settings, manager)
         {
-            _expressions.Add(new Regex("^!ping\\b"));
+            Expressions.Add(new Regex("^!ping\\b"));
         }
 
-        public List<Regex> Expressions
+        public override void Execute(MessageArgs message)
         {
-            get
-            {
-                return _expressions;
-            }
-        }
-
-        public string Name
-        {
-            get
-            {
-                return "Ping Command";
-            }
-        }
-
-        public void Execute(string user, string message, BotCore sender, BotSettings settings, UserManager manager)
-        {
-            sender.WriteChatMessage("Pong!", false);
+            _core.WriteChatMessage("Pong!", false);
         }
     }
 }

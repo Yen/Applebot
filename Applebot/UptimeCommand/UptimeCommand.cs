@@ -14,35 +14,17 @@ namespace UptimeCommand
 {
     public class UptimeCommand : Command
     {
-        private List<Regex> _expressions = new List<Regex>();
-
-        public UptimeCommand()
+        public UptimeCommand(BotCore core, BotSettings settings, UserManager manager) : base("Uptime Command", core, settings, manager)
         {
-            _expressions.Add(new Regex("^!uptime\\b"));
+            Expressions.Add(new Regex("^!uptime\\b"));
         }
 
-        public List<Regex> Expressions
-        {
-            get
-            {
-                return _expressions;
-            }
-        }
-
-        public string Name
-        {
-            get
-            {
-                return "Uptime Command";
-            }
-        }
-
-        public void Execute(string user, string message, BotCore sender, BotSettings settings, UserManager manager)
+        public override void Execute(MessageArgs args)
         {
             //TODO: highlight tracking?
 
-            string[] parts = message.Split(' ');
-            string owner = settings["channel"].ToString().Substring(1);
+            string[] parts = args.Content.Split(' ');
+            string owner = _settings["channel"].ToString().Substring(1);
             //owner = "witwix";
 
             string rawData = new WebClient().DownloadString("https://api.twitch.tv/kraken/streams/" + owner);
@@ -60,7 +42,7 @@ namespace UptimeCommand
             if (bufferNode == null)
             {
                 Logger.Log(Logger.Level.WARNING, "API returned null stream node (stream offline?)");
-                sender.WriteChatMessage("Error retrieving stream info. :v", false);
+                _core.WriteChatMessage("Error retrieving stream info. :v", false);
                 return;
             }
 
@@ -76,7 +58,7 @@ namespace UptimeCommand
             string seconds = Math.Floor(numMinutes % 60).ToString();
 
             string output = String.Format("Live for {0} {1}, {2} {3}.", hours, hours == "1" ? "hour" : "hours", minutes, minutes == "1" ? "minute" : "minutes");
-            sender.WriteChatMessage(output, false);
+            _core.WriteChatMessage(output, false);
         }
     }
 }

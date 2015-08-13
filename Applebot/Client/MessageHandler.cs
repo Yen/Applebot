@@ -39,7 +39,7 @@ namespace Client
                 if (command != null)
                 {
                     Logger.Log(Logger.Level.COMMAND, "User \"{0}\" triggered command ({1})", user, command.Name);
-                    new Thread(() => { command.Execute(user, message, _sender, _settings, _manager); }).Start();
+                    new Thread(() => { command.Execute(MessageArgs.GenerateArgs(user, message)); }).Start();
                 }
             }
         }
@@ -90,10 +90,15 @@ namespace Client
                     Type[] types = assembly.GetTypes();
                     foreach (Type type in types)
                     {
-                        Type[] interfaces = type.GetInterfaces();
-                        if (interfaces.Contains(typeof(Command)))
+                        if (type.IsSubclassOf(typeof(Command)))
                         {
-                            Command command = (Command)Activator.CreateInstance(type);
+                            ConstructorInfo constructor = type.GetConstructor(new Type[] { typeof(BotCore), typeof(BotSettings), typeof(UserManager) });
+                            if(constructor == null || !constructor.IsPublic)
+                            {
+                                Logger.Log(Logger.Level.ERROR, "Type \"{0}\" does not include the public constructor (BotCore, BotSettings, UserManager)", type.Name);
+                                break;
+                            }
+                            Command command = (Command)Activator.CreateInstance(type, _sender, _settings, _manager);
                             if (_commands.Any(i => i.Name == command.Name))
                             {
                                 Logger.Log(Logger.Level.ERROR, "Command named \"{0}\" was already loaded, not loading new command", command.Name);

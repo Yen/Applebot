@@ -12,79 +12,62 @@ namespace SimpleTextCommand
 {
     public class SimpleTextCommand : Command
     {
-        private List<Regex> _expressions = new List<Regex>();
         private XmlNodeList _patterns;
         private string _configLocation;
-        private XmlDocument _settings;
+        private XmlDocument _commandSettings;
         private XmlNode _rootNode;
 
-        public SimpleTextCommand()
+        public SimpleTextCommand(BotCore core, BotSettings settings, UserManager manager) : base("Simple Text Command", core, settings, manager)
         {
-            _expressions.Add(new Regex("^!text\\b"));
+            Expressions.Add(new Regex("^!text\\b"));
 
             _configLocation = "SimpleTextCommand.xml";
 
-            _settings = new XmlDocument();
+            _commandSettings = new XmlDocument();
 
             if (!File.Exists(_configLocation)) {
                 Logger.Log(Logger.Level.WARNING, "SimpleTextCommand config not found, one will be created");
-                _rootNode = _settings.CreateElement("patterns");
+                _rootNode = _commandSettings.CreateElement("patterns");
 
-                _settings.AppendChild(_rootNode);
+                _commandSettings.AppendChild(_rootNode);
 
-                _settings.Save(_configLocation);
+                _commandSettings.Save(_configLocation);
             }
 
             try
             {
-                _settings.Load(_configLocation);
+                _commandSettings.Load(_configLocation);
             }
             catch
             {
                 Logger.Log(Logger.Level.ERROR, "Couldn't load SimpleTextCommand config file");
             }
 
-            _rootNode = _settings.FirstChild;
-            _patterns = _settings.SelectNodes("/patterns/pattern");
+            _rootNode = _commandSettings.FirstChild;
+            _patterns = _commandSettings.SelectNodes("/patterns/pattern");
 
             foreach(XmlNode node in _patterns)
             {
                 string trigger = node.Attributes["trigger"].Value;
                 Logger.Log(Logger.Level.LOG, "SimpleTextCommand: Adding pattern \"" + trigger + "\"");
-                _expressions.Add(new Regex("^!" + trigger + "\\b"));
+                Expressions.Add(new Regex("^!" + trigger + "\\b"));
             }
 
-        }
-
-        public List<Regex> Expressions
-        {
-            get
-            {
-                return _expressions;
-            }
-        }
-
-        public string Name
-        {
-            get
-            {
-                return "Simple Text Command";
-            }
         }
 
         private void UpdateXml()
         {
-            _patterns = _settings.SelectNodes("/patterns/pattern");
-            _settings.Save(_configLocation);
+            _patterns = _commandSettings.SelectNodes("/patterns/pattern");
+            _commandSettings.Save(_configLocation);
         }
 
         private bool RemovePattern(string trigger)
         {
             bool replaced = false;
             
-            lock (_settings)
+            lock (_commandSettings)
             {
-                XmlNodeList existingMatches = _settings.SelectNodes("/patterns/pattern[@trigger='" + trigger + "']");
+                XmlNodeList existingMatches = _commandSettings.SelectNodes("/patterns/pattern[@trigger='" + trigger + "']");
                 if (existingMatches.Count > 0)
                 {
                     foreach (XmlNode node in existingMatches)
@@ -102,18 +85,18 @@ namespace SimpleTextCommand
 
         private bool AddPattern(string trigger, string response)
         {
-            lock (_settings)
+            lock (_commandSettings)
             {
                 bool replaced = RemovePattern(trigger);
 
 
-                XmlNode samplePattern = _settings.CreateElement("pattern");
+                XmlNode samplePattern = _commandSettings.CreateElement("pattern");
 
-                XmlAttribute sampleTrigger = _settings.CreateAttribute("trigger");
+                XmlAttribute sampleTrigger = _commandSettings.CreateAttribute("trigger");
                 sampleTrigger.Value = trigger;
                 samplePattern.Attributes.Append(sampleTrigger);
 
-                XmlAttribute sampleResponse = _settings.CreateAttribute("response");
+                XmlAttribute sampleResponse = _commandSettings.CreateAttribute("response");
                 sampleResponse.Value = response;
                 samplePattern.Attributes.Append(sampleResponse);
 
@@ -123,7 +106,7 @@ namespace SimpleTextCommand
 
                 if (!replaced)
                 {
-                    _expressions.Add(new Regex("^!" + trigger + "\\b"));
+                    Expressions.Add(new Regex("^!" + trigger + "\\b"));
                 }
 
                 return replaced;
@@ -131,15 +114,15 @@ namespace SimpleTextCommand
             
         }
 
-        public void Execute(string user, string message, BotCore sender, BotSettings settings, UserManager manager)
+        public override void Execute(MessageArgs args)
         {
-            string[] parts = message.Split(' ');
+            string[] parts = args.Content.Split(' ');
 
             if (parts[0] == "!text")
             {
-                string owner = settings["channel"].ToString().Substring(1);
+                string owner = _settings["channel"].ToString().Substring(1);
 
-                if (user != owner)
+                if (args.User != owner)
                 {
                     Logger.Log(Logger.Level.WARNING, "User is not owner, aborting");
                     return;
@@ -147,7 +130,7 @@ namespace SimpleTextCommand
 
                 if (parts.Length < 2)
                 {
-                    sender.WriteChatMessage("Missing parameters. :v", false);
+                    _core.WriteChatMessage("Missing parameters. :v", false);
                     return;
                 }
 
@@ -155,7 +138,7 @@ namespace SimpleTextCommand
                 {
                     if (parts.Length < 3)
                     {
-                        sender.WriteChatMessage("Syntax: !text remove [command]", false);
+                        _core.WriteChatMessage("Syntax: !text remove [command]", false);
                         return;
                     }
 
@@ -163,11 +146,11 @@ namespace SimpleTextCommand
 
                     if (replaced)
                     {
-                        sender.WriteChatMessage("Removed pattern " + parts[2] + ".", false);
+                        _core.WriteChatMessage("Removed pattern " + parts[2] + ".", false);
                     }
                     else
                     {
-                        sender.WriteChatMessage("Pattern " + parts[2] + " doesn't exist. :v", false);
+                        _core.WriteChatMessage("Pattern " + parts[2] + " doesn't exist. :v", false);
                     }
 
                     return;
@@ -178,21 +161,21 @@ namespace SimpleTextCommand
                 {
                     if (parts.Length < 4)
                     {
-                        sender.WriteChatMessage("Syntax: !text add [command] [response]", false);
+                        _core.WriteChatMessage("Syntax: !text add [command] [response]", false);
                         return;
                     }
 
-                    string response = message.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 3);
+                    string response = args.Content.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 3);
                     Logger.Log(Logger.Level.MESSAGE, "response is " + response);
                     bool replaced = AddPattern(parts[2], response);
 
                     if (replaced)
                     {
-                        sender.WriteChatMessage("Replaced pattern " + parts[2] + ".", false);
+                        _core.WriteChatMessage("Replaced pattern " + parts[2] + ".", false);
                     }
                     else
                     {
-                        sender.WriteChatMessage("Added pattern " + parts[2] + ".", false);
+                        _core.WriteChatMessage("Added pattern " + parts[2] + ".", false);
                     }
 
                     return;
@@ -205,9 +188,9 @@ namespace SimpleTextCommand
                 foreach (XmlNode node in _patterns)
                 {
                     string trigger = node.Attributes["trigger"].Value;
-                    if (trigger == message.Substring(1))
+                    if (trigger == args.Content.Substring(1))
                     {
-                        sender.WriteChatMessage(node.Attributes["response"].Value, false);
+                        _core.WriteChatMessage(node.Attributes["response"].Value, false);
                     }
                 }
             }
