@@ -19,6 +19,8 @@ namespace Client
         private List<Command> _commands = new List<Command>();
         private object _commandLock = new object();
 
+        private List<Tuple<Command, DateTime, TimeSpan>> _previousCommands = new List<Tuple<Command, DateTime, TimeSpan>>();
+
         public MessageHandler(BotSettings settings, BotCore sender, UserManager manager)
         {
             _settings = settings;
@@ -39,6 +41,27 @@ namespace Client
                 if (command != null)
                 {
                     Logger.Log(Logger.Level.COMMAND, "User \"{0}\" triggered command ({1})", user, command.Name);
+                    foreach (Tuple<Command, DateTime, TimeSpan> i in _previousCommands.ToArray())
+                    {
+                        if (i.Item2 < DateTime.UtcNow - i.Item3)
+                            _previousCommands.Remove(i);
+                    }
+
+                    if (_previousCommands.Any(i => i.Item1 == command))
+                    {
+                        if (_manager[user].IsElevated)
+                        {
+                            Logger.Log(Logger.Level.COMMAND, "Command overflow for \"{0}\" was skipped by operator \"{1}\"", command.Name, user);
+                            _previousCommands.RemoveAll(i => i.Item1 == command);
+                        }
+                        else
+                        {
+                            Logger.Log(Logger.Level.COMMAND, "Command \"{0}\" was suppressed due to overflow", command.Name);
+                            return;
+                        }
+                    }
+
+                    _previousCommands.Add(Tuple.Create(command, DateTime.UtcNow, command.Overflow));
                     new Thread(() => { command.Execute(MessageArgs.Generate(user, message)); }).Start();
                 }
             }
@@ -93,7 +116,7 @@ namespace Client
                         if (type.IsSubclassOf(typeof(Command)))
                         {
                             ConstructorInfo constructor = type.GetConstructor(new Type[] { typeof(CommandData) });
-                            if(constructor == null || !constructor.IsPublic)
+                            if (constructor == null || !constructor.IsPublic)
                             {
                                 Logger.Log(Logger.Level.ERROR, "Type \"{0}\" does not include the public constructor (BotCore, BotSettings, UserManager)", type.Name);
                                 break;

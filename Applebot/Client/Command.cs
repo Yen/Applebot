@@ -34,17 +34,21 @@ namespace Client
     {
         public string Name { get; private set; }
         public List<Regex> Expressions { get; private set; }
+        public TimeSpan Overflow { get; private set; }
 
         protected CommandData _data { get; private set; }
 
-        public Command(string name, CommandData data)
+        public Command(string name, TimeSpan overflow, CommandData data)
         {
             Name = name;
+            Overflow = overflow;
 
             _data = data;
 
             Expressions = new List<Regex>();
         }
+
+        public Command(string name, CommandData data) : this(name, TimeSpan.Zero, data) { }
 
         public abstract void Execute(MessageArgs message);
     }

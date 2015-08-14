@@ -10,7 +10,7 @@ namespace PingCommand
 {
     public class PingCommand : Command
     {
-        public PingCommand(CommandData data) : base("Ping Command", data)
+        public PingCommand(CommandData data) : base("Ping Command", TimeSpan.FromSeconds(5), data)
         {
             Expressions.Add(new Regex("^!ping\\b"));
         }
