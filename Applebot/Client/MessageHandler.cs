@@ -15,6 +15,7 @@ namespace Client
         private BotSettings _settings;
         private BotCore _sender;
         private UserManager _manager;
+        private TaskFactory _factory = new TaskFactory(TaskCreationOptions.PreferFairness, TaskContinuationOptions.PreferFairness);
 
         private List<Command> _commands = new List<Command>();
         private object _commandLock = new object();
@@ -62,7 +63,7 @@ namespace Client
                     }
 
                     _previousCommands.Add(Tuple.Create(command, DateTime.UtcNow, command.Overflow));
-                    new Thread(() => { command.Execute(MessageArgs.Generate(user, message)); }).Start();
+                    _factory.StartNew(() => { command.Execute(MessageArgs.Generate(user, message)); });
                 }
             }
         }

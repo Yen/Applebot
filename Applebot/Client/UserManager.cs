@@ -17,7 +17,7 @@ namespace Client
         {
             public bool IsElevated { get; private set; }
 
-            public static User GenerateUser(bool elevated)
+            public static User Generate(bool elevated)
             {
                 return new User { IsElevated = elevated };
             }
@@ -87,12 +87,12 @@ namespace Client
 
             // Host are always elevated even if twitch api is derp
             if (buffer.Equals(((string)_settings["channel"]).ToLower().Substring(1)))
-                return User.GenerateUser(true);
+                return User.Generate(true);
 
             if (_operators.Contains(buffer))
-                return User.GenerateUser(true);
+                return User.Generate(true);
 
-            return User.GenerateUser(false);
+            return User.Generate(false);
         }
 
         public User this[string user]

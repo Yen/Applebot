@@ -48,7 +48,8 @@ namespace Client
             Expressions = new List<Regex>();
         }
 
-        public Command(string name, CommandData data) : this(name, TimeSpan.Zero, data) { }
+        public Command(string name, CommandData data) : this(name, TimeSpan.Zero, data)
+        { }
 
         public abstract void Execute(MessageArgs message);
     }
