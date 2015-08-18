@@ -50,7 +50,7 @@ namespace Client
 
                     if (_previousCommands.Any(i => i.Item1 == command))
                     {
-                        if (_manager[user].IsElevated)
+                        if (_manager[user].Elevated)
                         {
                             Logger.Log(Logger.Level.COMMAND, "Command overflow for \"{0}\" was skipped by operator \"{1}\"", command.Name, user);
                             _previousCommands.RemoveAll(i => i.Item1 == command);

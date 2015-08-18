@@ -15,11 +15,11 @@ namespace Client
 
         public struct User
         {
-            public bool IsElevated { get; private set; }
+            public bool Elevated { get; private set; }
 
             public static User Generate(bool elevated)
             {
-                return new User { IsElevated = elevated };
+                return new User { Elevated = elevated };
             }
         }
 
