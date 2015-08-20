@@ -20,6 +20,7 @@ namespace SimpleTextCommand
         public SimpleTextCommand(CommandData data) : base("Simple Text Command", data)
         {
             Expressions.Add(new Regex("^!text\\b"));
+            Expressions.Add(new Regex("^!match\\b"));
 
             _configLocation = "SimpleTextCommand.xml";
 
@@ -49,8 +50,18 @@ namespace SimpleTextCommand
             foreach(XmlNode node in _patterns)
             {
                 string trigger = node.Attributes["trigger"].Value;
-                Logger.Log(Logger.Level.LOG, "SimpleTextCommand: Adding pattern \"" + trigger + "\"");
-                Expressions.Add(new Regex("^!" + trigger + "\\b"));
+
+                if (node.Attributes["type"].Value == "text")
+                {
+                    Expressions.Add(new Regex("^!" + trigger + "\\b"));
+                }
+                else
+                {
+                    Expressions.Add(new Regex(trigger));
+                }
+
+                Logger.Log(Logger.Level.LOG, "SimpleTextCommand: Added pattern \"" + trigger + "\"");
+
             }
 
         }
@@ -83,8 +94,11 @@ namespace SimpleTextCommand
             return replaced;
         }
 
-        private bool AddPattern(string trigger, string response)
+        private bool AddPattern(string trigger, string response, bool isComplex)
         {
+            //TODO: check for valid regex on add because apparently attempting to parse one that doesn't real blows things up
+
+
             lock (_commandSettings)
             {
                 bool replaced = RemovePattern(trigger);
@@ -99,6 +113,19 @@ namespace SimpleTextCommand
                 XmlAttribute sampleResponse = _commandSettings.CreateAttribute("response");
                 sampleResponse.Value = response;
                 samplePattern.Attributes.Append(sampleResponse);
+
+                XmlAttribute sampleType = _commandSettings.CreateAttribute("type");
+
+                if (isComplex)
+                {
+                    sampleType.Value = "regex";
+                }
+                else
+                {
+                    sampleType.Value = "text";
+                }
+
+                samplePattern.Attributes.Append(sampleType);
 
                 _rootNode.AppendChild(samplePattern);
 
@@ -118,8 +145,11 @@ namespace SimpleTextCommand
         {
             string[] parts = args.Content.Split(' ');
 
-            if (parts[0] == "!text")
+            if (parts[0] == "!text" || parts[0] == "!match")
             {
+                bool isComplex = (parts[0] == "!match");
+                string syntaxHelp = parts[0];
+
                 string owner = _data.Settings["channel"].ToString().Substring(1);
 
                 if (args.User != owner)
@@ -138,7 +168,7 @@ namespace SimpleTextCommand
                 {
                     if (parts.Length < 3)
                     {
-                        _data.Core.WriteChatMessage("Syntax: !text remove [command]", false);
+                        _data.Core.WriteChatMessage("Syntax: {0} remove [command]", false, syntaxHelp);
                         return;
                     }
 
@@ -161,13 +191,13 @@ namespace SimpleTextCommand
                 {
                     if (parts.Length < 4)
                     {
-                        _data.Core.WriteChatMessage("Syntax: !text add [command] [response]", false);
+                        _data.Core.WriteChatMessage("Syntax: {0} add [command] [response]", false, syntaxHelp);
                         return;
                     }
 
                     string response = args.Content.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 3);
                     Logger.Log(Logger.Level.MESSAGE, "response is " + response);
-                    bool replaced = AddPattern(parts[2], response);
+                    bool replaced = AddPattern(parts[2], response, isComplex);
 
                     if (replaced)
                     {
@@ -188,10 +218,23 @@ namespace SimpleTextCommand
                 foreach (XmlNode node in _patterns)
                 {
                     string trigger = node.Attributes["trigger"].Value;
-                    if (trigger == args.Content.Substring(1))
-                    {
-                        _data.Core.WriteChatMessage(node.Attributes["response"].Value, false);
+                    string type = node.Attributes["type"].Value;
+
+                    if (type == "regex") {
+                        Regex r = new Regex(trigger);
+                        if (r.IsMatch(args.Content)) {
+                            _data.Core.WriteChatMessage(node.Attributes["response"].Value, false);
+                        }
                     }
+
+                    if (type == "text")
+                    {
+                        if (trigger == args.Content.Substring(1))
+                        {
+                            _data.Core.WriteChatMessage(node.Attributes["response"].Value, false);
+                        }
+                    }
+
                 }
             }
 
