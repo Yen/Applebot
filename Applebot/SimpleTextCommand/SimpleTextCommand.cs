@@ -103,6 +103,12 @@ namespace SimpleTextCommand
             {
                 bool replaced = RemovePattern(trigger);
 
+                if (isComplex)
+                {
+                    Regex r = new Regex(trigger);
+                    r.IsMatch("");
+                }
+
 
                 XmlNode samplePattern = _commandSettings.CreateElement("pattern");
 
@@ -196,18 +202,28 @@ namespace SimpleTextCommand
                     }
 
                     string response = args.Content.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 3);
-                    Logger.Log(Logger.Level.MESSAGE, "response is " + response);
-                    bool replaced = AddPattern(parts[2], response, isComplex);
 
-                    if (replaced)
+                    try
                     {
-                        _data.Core.WriteChatMessage("Replaced pattern " + parts[2] + ".", false);
+                        bool replaced = AddPattern(parts[2], response, isComplex);
+
+                        if (replaced)
+                        {
+                            _data.Core.WriteChatMessage("Replaced pattern " + parts[2] + ".", false);
+                        }
+                        else
+                        {
+                            _data.Core.WriteChatMessage("Added pattern " + parts[2] + ".", false);
+                        }
+
                     }
-                    else
+                    catch
                     {
-                        _data.Core.WriteChatMessage("Added pattern " + parts[2] + ".", false);
+                        _data.Core.WriteChatMessage("Invalid regex?", false);
+                        return;
                     }
 
+                    
                     return;
                 }
                 
