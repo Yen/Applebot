@@ -7,18 +7,6 @@ using System.Threading.Tasks;
 namespace Client
 {
 
-    public enum BackendConnectionState
-    {
-        Connected,
-        Closed
-    }
-
-    public enum BackendUsageState
-    {
-        Ready,
-        Unavailable
-    }
-
     public class BackendConnectionInfo
     {
         public string Host { get; private set; }
@@ -43,23 +31,31 @@ namespace Client
         }
     }
 
-    public abstract class Backend<TConnectionInfo, TLoginInfo>
+    [AttributeUsage(AttributeTargets.Class)]
+    public class BackendRegister : Attribute
+    {
+        public Type BackendType { get; private set; }
+
+        public BackendRegister(Type backendType)
+        {
+            BackendType = backendType;
+        }
+    }
+
+    public abstract class Backend
+    {
+        public abstract Task Run();
+    }
+
+    public abstract class Backend<TConnectionInfo, TLoginInfo> : Backend
         where TConnectionInfo : BackendConnectionInfo
         where TLoginInfo : BackendLoginInfo
     {
-        public BackendConnectionState ConnectionState { get; protected set; }
-        public BackendUsageState UsageState { get; protected set; }
 
         //public Backend(BotCore core)
-        public Backend()
-        {
-            ConnectionState = BackendConnectionState.Closed;
-            UsageState = BackendUsageState.Unavailable;
-        }
 
         public abstract void Connect(TConnectionInfo connect);
         public abstract void Login(TLoginInfo login);
-        public abstract Task Run();
     }
 
     // Example
@@ -80,20 +76,20 @@ namespace Client
         public override void Connect(BackendConnectionInfo connect)
         {
             //Blah
-
-            ConnectionState = BackendConnectionState.Connected;
         }
 
         public override void Login(TwitchBackendLoginInfo login)
         {
             //Blah
-
-            UsageState = BackendUsageState.Ready;
         }
 
         public override Task Run()
         {
-            throw new NotImplementedException();
+           while(true)
+            {
+                Logger.Log(Logger.Level.ERROR, "a");
+                System.Threading.Thread.Sleep(1000);
+            }
         }
     }
 
