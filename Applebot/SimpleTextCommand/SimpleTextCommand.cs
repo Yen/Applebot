@@ -96,8 +96,6 @@ namespace SimpleTextCommand
 
         private bool AddPattern(string trigger, string response, bool isComplex)
         {
-            //TODO: check for valid regex on add because apparently attempting to parse one that doesn't real blows things up
-
 
             lock (_commandSettings)
             {
@@ -139,7 +137,16 @@ namespace SimpleTextCommand
 
                 if (!replaced)
                 {
-                    Expressions.Add(new Regex("^!" + trigger + "\\b"));
+
+                    if (isComplex)
+                    {
+                        Expressions.Add(new Regex(trigger));
+                    }
+                    else
+                    {
+                        Expressions.Add(new Regex("^!" + trigger + "\\b"));
+                    }
+
                 }
 
                 return replaced;
