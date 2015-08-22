@@ -6,6 +6,23 @@ using System.Threading.Tasks;
 
 namespace ApplebotAPI
 {
+
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    public sealed class PlatformRegistrar : Attribute
+    {
+        public Type PlatformType { get; private set; }
+
+        public PlatformRegistrar(Type platformType)
+        {
+            PlatformType = platformType;
+            if (!PlatformType.IsSubclassOf(typeof(Platform)))
+            {
+                throw new ArgumentException(string.Format("Argument must be a subclass of {0}", typeof(Platform)), "platformType");
+            }
+        }
+    }
+
     public abstract class Platform : ISender
     {
         public abstract void Send<T1>(T1 data)

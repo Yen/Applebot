@@ -57,7 +57,7 @@ namespace ApplebotAPI
             Console.WriteLine(message.Content);
         }
 
-        public void HandleMessage<T2>(TwitchMessage message, T2 sender)
+        public void HandleMessage<T1>(TwitchMessage message, T1 sender)
         {
             Console.WriteLine(string.Format("{0}: {1}", message.User, message.Content));
         }
