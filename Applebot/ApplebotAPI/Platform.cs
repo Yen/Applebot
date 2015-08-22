@@ -8,11 +8,23 @@ namespace ApplebotAPI
 {
     public abstract class Platform : ISender
     {
-        public abstract void Send(string data);
+        public abstract void Send<T1>(T1 data)
+            where T1 : SendData;
+    }
+
+    public class SendData
+    {
+        public string Content { get; private set; }
+
+        public SendData(string content)
+        {
+            Content = content;
+        }
     }
 
     public interface ISender
     {
-        void Send(string data);
+        void Send<T1>(T1 data)
+            where T1 : SendData;
     }
 }

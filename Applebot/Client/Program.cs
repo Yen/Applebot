@@ -30,6 +30,12 @@ namespace Client
         {
             Console.WriteLine("Applebot");
 
+            //ApplebotAPI.Ayy a = new ApplebotAPI.Ayy();
+            //ApplebotAPI.Lmao b = new ApplebotAPI.Lmao();
+            //a.HandleMessage(new ApplebotAPI.TwitchMessage("kek", "lel"), b);
+            //a.HandleMessage(new ApplebotAPI.Message("ayy"), b);
+            //a.HandleMessage(new ApplebotAPI.TwitchMessage("kek", "lel"), b);
+
             try
             {
                 Logger.Log(Logger.Level.LOG, "Loading settings");

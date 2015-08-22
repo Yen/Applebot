@@ -49,11 +49,34 @@ namespace ApplebotAPI
     {
         public Ayy() : base("ayy")
         {
+
         }
 
         public override void HandleMessage<T1, T2>(T1 message, T2 sender)
         {
-            sender.Send("123");
+            Console.WriteLine(message.Content);
+        }
+
+        public void HandleMessage<T2>(TwitchMessage message, T2 sender)
+        {
+            Console.WriteLine(string.Format("{0}: {1}", message.User, message.Content));
+        }
+    }
+
+    public class Lmao : Platform
+    {
+        public override void Send<T1>(T1 data)
+        {
+        }
+    }
+
+    public class TwitchMessage : Message
+    {
+        public string User { get; private set; }
+
+        public TwitchMessage(string content, string user) : base(content)
+        {
+            User = user;
         }
     }
 }
