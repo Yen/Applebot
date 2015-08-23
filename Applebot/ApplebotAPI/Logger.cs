@@ -26,6 +26,7 @@ namespace ApplebotAPI
 
             public static readonly Level ERROR = new Level("Error", ConsoleColor.Red);
             public static readonly Level WARNING = new Level("Warning", ConsoleColor.Yellow);
+            public static readonly Level APPLICATION = new Level("App", ConsoleColor.Magenta);
         }
 
         public static void Log(Level level, string format, params object[] args)
