@@ -36,6 +36,9 @@ namespace Client
             //a.HandleMessage(new ApplebotAPI.Message("ayy"), b);
             //a.HandleMessage(new ApplebotAPI.TwitchMessage("kek", "lel"), b);
 
+            //ApplebotAPI.Logger.Log("kek");
+            //ApplebotAPI.Logger.Log(ApplebotAPI.Logger.Level.ERROR, "memes");
+
             try
             {
                 Logger.Log(Logger.Level.LOG, "Loading settings");
