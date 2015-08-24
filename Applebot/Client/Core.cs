@@ -13,6 +13,7 @@ namespace ClientNew
     {
         private List<Tuple<Command, IEnumerable<Type>>> _commands = new List<Tuple<Command, IEnumerable<Type>>>();
         private List<Platform> _platforms = new List<Platform>();
+        private object _pluginLock = new object();
 
         public Core()
         {
@@ -30,209 +31,218 @@ namespace ClientNew
 
         private IEnumerable<Command> GetCommandsForPlatform(Platform platform)
         {
-            return _commands.Where(x => x.Item2.Contains(platform.GetType())).Select(x => x.Item1);
+            lock(_pluginLock)
+            {
+                return _commands.Where(x => x.Item2.Contains(platform.GetType())).Select(x => x.Item1);
+            }
         }
 
         private MethodInfo CalculateLeastDerivedMessageHandle(Type messageType, Type senderType, Type commandType)
         {
             // Message type takes priority over sender type, this may be changed at a later date
 
-            var methods = commandType.GetMethods().Where(x => x.Name == "HandleMessage").Where(x => x.GetParameters().Length == 2);
-            MethodInfo top = typeof(Command).GetMethod("HandleMessage").MakeGenericMethod(new Type[] { messageType, senderType });
-            bool hasMessage = false;
-            foreach (MethodInfo method in methods)
+            lock(_pluginLock)
             {
-                var parameters = method.GetParameters();
-
-                var a = parameters[1].ParameterType.GetInterfaces();
-
-                if ((parameters[0].ParameterType == messageType) && (parameters[1].ParameterType == senderType))
+                var methods = commandType.GetMethods().Where(x => x.Name == "HandleMessage").Where(x => x.GetParameters().Length == 2);
+                MethodInfo top = typeof(Command).GetMethod("HandleMessage").MakeGenericMethod(new Type[] { messageType, senderType });
+                bool hasMessage = false;
+                foreach (MethodInfo method in methods)
                 {
-                    return method;
-                }
+                    var parameters = method.GetParameters();
 
-                if (!hasMessage && parameters[0].ParameterType == messageType)
-                {
-                    if (method.IsGenericMethod)
+                    var a = parameters[1].ParameterType.GetInterfaces();
+
+                    if ((parameters[0].ParameterType == messageType) && (parameters[1].ParameterType == senderType))
                     {
-                        if (!Enumerable.SequenceEqual(parameters[1].ParameterType.GetInterfaces(), new Type[] { typeof(ISender) }))
-                            continue;
-                        top = method.MakeGenericMethod(new Type[] { typeof(ISender) });
+                        return method;
                     }
-                    else
-                        top = method;
-                    hasMessage = true;
-                }
 
-                if (!hasMessage && parameters[1].ParameterType == senderType)
-                {
-                    if (method.IsGenericMethod)
+                    if (!hasMessage && parameters[0].ParameterType == messageType)
                     {
-                        if (!Enumerable.SequenceEqual(parameters[0].ParameterType.GetInterfaces(), new Type[0]) || !parameters[0].ParameterType.IsSubclassOf(typeof(Message)))
-                            continue;
-                        top = method.MakeGenericMethod(new Type[] { typeof(Message) });
+                        if (method.IsGenericMethod)
+                        {
+                            if (!Enumerable.SequenceEqual(parameters[1].ParameterType.GetInterfaces(), new Type[] { typeof(ISender) }))
+                                continue;
+                            top = method.MakeGenericMethod(new Type[] { typeof(ISender) });
+                        }
+                        else
+                            top = method;
+                        hasMessage = true;
                     }
-                    else
-                        top = method;
+
+                    if (!hasMessage && parameters[1].ParameterType == senderType)
+                    {
+                        if (method.IsGenericMethod)
+                        {
+                            if (!Enumerable.SequenceEqual(parameters[0].ParameterType.GetInterfaces(), new Type[0]) || !parameters[0].ParameterType.IsSubclassOf(typeof(Message)))
+                                continue;
+                            top = method.MakeGenericMethod(new Type[] { typeof(Message) });
+                        }
+                        else
+                            top = method;
+                    }
                 }
+                return top;
             }
-            return top;
         }
 
         public void ReloadPlugins()
         {
-            Logger.Log(Logger.Level.APPLICATION, "Reloading plugins");
-
-            _commands.Clear();
-            _platforms.Clear();
-
-            if (!Directory.Exists("Plugins"))
+            lock (_pluginLock)
             {
-                Logger.Log(Logger.Level.WARNING, "Could not fild plugins folder, no plugins will be loaded");
-                return;
-            }
+                Logger.Log(Logger.Level.APPLICATION, "Reloading plugins");
 
-            Logger.Log(Logger.Level.APPLICATION, "Searching plugins folder for assemblies...");
+                _commands.Clear();
+                _platforms.Clear();
 
-            string[] assemblyPaths = Directory.GetFiles("Plugins", "*.dll");
-
-            if (assemblyPaths.Length == 0)
-            {
-                Logger.Log(Logger.Level.APPLICATION, "No possible assemblies were found in plugins folder");
-                return;
-            }
-
-            Logger.Log(Logger.Level.APPLICATION, "A total of {0} possible {1} was found in plugins folder", assemblyPaths.Length, (assemblyPaths.Length == 1) ? "assembly" : "assemblies");
-
-            List<Assembly> assemblies = new List<Assembly>();
-            foreach (string path in assemblyPaths)
-            {
-                try
+                if (!Directory.Exists("Plugins"))
                 {
-                    AssemblyName name = AssemblyName.GetAssemblyName(path);
-                    Assembly assembly = Assembly.Load(name);
-                    assemblies.Add(assembly);
-                }
-                catch (BadImageFormatException e)
-                {
-                    Logger.Log(Logger.Level.WARNING, "File \"{0}\" in plugins folder is not a valid assembly, skipping", e.FileName);
-                    continue;
-                }
-            }
-
-            Logger.Log(Logger.Level.APPLICATION, "A total of {0} valid {1} loaded", assemblies.Count, (assemblies.Count == 1) ? "assembly was" : "assemblies were");
-
-            List<Type> types = new List<Type>();
-
-            foreach (Assembly assembly in assemblies)
-            {
-                var t = assembly.GetTypes();
-                if (t.Length == 0)
-                {
-                    Logger.Log(Logger.Level.WARNING, "No types were found in assembly \"{0}\", plugin is empty", assembly.GetName().Name);
-                    continue;
-                }
-                types.AddRange(assembly.GetTypes());
-            }
-
-            if (types.Count == 0)
-            {
-                Logger.Log(Logger.Level.WARNING, "No types were found in any loaded assembly, no plugins will be loaded");
-                return;
-            }
-            Logger.Log(Logger.Level.APPLICATION, "A total of {0} valid {1} found in assemblies", types.Count, (types.Count == 1) ? "type was" : "types were");
-
-            List<Type> commandTypes = new List<Type>();
-
-            foreach (Type type in types)
-            {
-                if (type.IsSubclassOf(typeof(Command)))
-                {
-                    commandTypes.Add(type);
-                }
-            }
-
-            Logger.Log(Logger.Level.APPLICATION, "Of {0} total {1}, {2} {3} found to be a subclass of {4}", types.Count, (types.Count == 1) ? "type" : "types", commandTypes.Count, (commandTypes.Count == 1) ? "was" : "were", typeof(Command));
-
-            foreach (Type type in commandTypes)
-            {
-                if (_commands.Any(x => x.Item1.GetType() == type))
-                {
-                    Logger.Log(Logger.Level.ERROR, "A command of type \"{0}\" is already registered, skipping", type);
-                    continue;
+                    Logger.Log(Logger.Level.WARNING, "Could not fild plugins folder, no plugins will be loaded");
+                    return;
                 }
 
-                ConstructorInfo constructor = type.GetConstructor(new Type[0]);
-                if (constructor == null || !constructor.IsPublic)
+                Logger.Log(Logger.Level.APPLICATION, "Searching plugins folder for assemblies...");
+
+                string[] assemblyPaths = Directory.GetFiles("Plugins", "*.dll");
+
+                if (assemblyPaths.Length == 0)
                 {
-                    Logger.Log(Logger.Level.ERROR, "Command type \"{0}\" does not have a valid public constructor, skipping", type);
-                    continue;
+                    Logger.Log(Logger.Level.APPLICATION, "No possible assemblies were found in plugins folder");
+                    return;
                 }
 
-                Command command = null;
-                try
+                Logger.Log(Logger.Level.APPLICATION, "A total of {0} possible {1} was found in plugins folder", assemblyPaths.Length, (assemblyPaths.Length == 1) ? "assembly" : "assemblies");
+
+                List<Assembly> assemblies = new List<Assembly>();
+                foreach (string path in assemblyPaths)
                 {
-                    command = Activator.CreateInstance(type) as Command;
-                }
-                catch
-                {
-                    Logger.Log(Logger.Level.ERROR, "There was an error creating Command from type \"{0}\", type was skipped");
-                    continue;
-                }
-
-                IEnumerable<PlatformRegistrar> platformAttributes = type.GetCustomAttributes<PlatformRegistrar>(true).Distinct();
-
-                if (platformAttributes.Count() == 0)
-                {
-                    Logger.Log(Logger.Level.WARNING, "Command \"{0}\" has no platform attribute types, the command will never be executed", command.Name);
-                }
-
-                IEnumerable<Type> platformList = platformAttributes.Select(x => x.PlatformType);
-
-                _commands.Add(Tuple.Create(command, platformList));
-                Logger.Log(Logger.Level.APPLICATION, "Command \"{0}\" of type {1} registered", command.Name, command.GetType());
-            }
-
-            List<Type> platformTypes = new List<Type>();
-
-            foreach (Type type in types)
-            {
-                if (type.IsSubclassOf(typeof(Platform)))
-                {
-                    platformTypes.Add(type);
-                }
-            }
-
-            Logger.Log(Logger.Level.APPLICATION, "Of {0} total {1}, {2} {3} found to be a subclass of {4}", types.Count, (types.Count == 1) ? "type" : "types", platformTypes.Count, (platformTypes.Count == 1) ? "was" : "were", typeof(Platform));
-
-            foreach (Type type in platformTypes)
-            {
-                if (_platforms.Any(x => x.GetType() == type))
-                {
-                    Logger.Log(Logger.Level.ERROR, "A platform of type \"{0}\" is already registered, skipping", type);
-                    continue;
+                    try
+                    {
+                        AssemblyName name = AssemblyName.GetAssemblyName(path);
+                        Assembly assembly = Assembly.Load(name);
+                        assemblies.Add(assembly);
+                    }
+                    catch (BadImageFormatException e)
+                    {
+                        Logger.Log(Logger.Level.WARNING, "File \"{0}\" in plugins folder is not a valid assembly, skipping", e.FileName);
+                        continue;
+                    }
                 }
 
-                ConstructorInfo constructor = type.GetConstructor(new Type[0]);
-                if (constructor == null || !constructor.IsPublic)
+                Logger.Log(Logger.Level.APPLICATION, "A total of {0} valid {1} loaded", assemblies.Count, (assemblies.Count == 1) ? "assembly was" : "assemblies were");
+
+                List<Type> types = new List<Type>();
+
+                foreach (Assembly assembly in assemblies)
                 {
-                    Logger.Log(Logger.Level.ERROR, "Platform type \"{0}\" does not have a valid public constructor, skipping", type);
-                    continue;
+                    var t = assembly.GetTypes();
+                    if (t.Length == 0)
+                    {
+                        Logger.Log(Logger.Level.WARNING, "No types were found in assembly \"{0}\", plugin is empty", assembly.GetName().Name);
+                        continue;
+                    }
+                    types.AddRange(assembly.GetTypes());
                 }
 
-                Platform platform = null;
-                try
+                if (types.Count == 0)
                 {
-                    platform = Activator.CreateInstance(type) as Platform;
+                    Logger.Log(Logger.Level.WARNING, "No types were found in any loaded assembly, no plugins will be loaded");
+                    return;
                 }
-                catch
+                Logger.Log(Logger.Level.APPLICATION, "A total of {0} valid {1} found in assemblies", types.Count, (types.Count == 1) ? "type was" : "types were");
+
+                List<Type> commandTypes = new List<Type>();
+
+                foreach (Type type in types)
                 {
-                    Logger.Log(Logger.Level.ERROR, "There was an error creating Platform from type \"{0}\", type was skipped");
-                    continue;
+                    if (type.IsSubclassOf(typeof(Command)))
+                    {
+                        commandTypes.Add(type);
+                    }
                 }
 
-                _platforms.Add(platform);
-                Logger.Log(Logger.Level.APPLICATION, "Platform of type {0} registered", platform.GetType());
+                Logger.Log(Logger.Level.APPLICATION, "Of {0} total {1}, {2} {3} found to be a subclass of {4}", types.Count, (types.Count == 1) ? "type" : "types", commandTypes.Count, (commandTypes.Count == 1) ? "was" : "were", typeof(Command));
+
+                foreach (Type type in commandTypes)
+                {
+                    if (_commands.Any(x => x.Item1.GetType() == type))
+                    {
+                        Logger.Log(Logger.Level.ERROR, "A command of type \"{0}\" is already registered, skipping", type);
+                        continue;
+                    }
+
+                    ConstructorInfo constructor = type.GetConstructor(new Type[0]);
+                    if (constructor == null || !constructor.IsPublic)
+                    {
+                        Logger.Log(Logger.Level.ERROR, "Command type \"{0}\" does not have a valid public constructor, skipping", type);
+                        continue;
+                    }
+
+                    Command command = null;
+                    try
+                    {
+                        command = Activator.CreateInstance(type) as Command;
+                    }
+                    catch
+                    {
+                        Logger.Log(Logger.Level.ERROR, "There was an error creating Command from type \"{0}\", type was skipped");
+                        continue;
+                    }
+
+                    IEnumerable<PlatformRegistrar> platformAttributes = type.GetCustomAttributes<PlatformRegistrar>(true).Distinct();
+
+                    if (platformAttributes.Count() == 0)
+                    {
+                        Logger.Log(Logger.Level.WARNING, "Command \"{0}\" has no platform attribute types, the command will never be executed", command.Name);
+                    }
+
+                    IEnumerable<Type> platformList = platformAttributes.Select(x => x.PlatformType);
+
+                    _commands.Add(Tuple.Create(command, platformList));
+                    Logger.Log(Logger.Level.APPLICATION, "Command \"{0}\" of type {1} registered", command.Name, command.GetType());
+                }
+
+                List<Type> platformTypes = new List<Type>();
+
+                foreach (Type type in types)
+                {
+                    if (type.IsSubclassOf(typeof(Platform)))
+                    {
+                        platformTypes.Add(type);
+                    }
+                }
+
+                Logger.Log(Logger.Level.APPLICATION, "Of {0} total {1}, {2} {3} found to be a subclass of {4}", types.Count, (types.Count == 1) ? "type" : "types", platformTypes.Count, (platformTypes.Count == 1) ? "was" : "were", typeof(Platform));
+
+                foreach (Type type in platformTypes)
+                {
+                    if (_platforms.Any(x => x.GetType() == type))
+                    {
+                        Logger.Log(Logger.Level.ERROR, "A platform of type \"{0}\" is already registered, skipping", type);
+                        continue;
+                    }
+
+                    ConstructorInfo constructor = type.GetConstructor(new Type[0]);
+                    if (constructor == null || !constructor.IsPublic)
+                    {
+                        Logger.Log(Logger.Level.ERROR, "Platform type \"{0}\" does not have a valid public constructor, skipping", type);
+                        continue;
+                    }
+
+                    Platform platform = null;
+                    try
+                    {
+                        platform = Activator.CreateInstance(type) as Platform;
+                    }
+                    catch
+                    {
+                        Logger.Log(Logger.Level.ERROR, "There was an error creating Platform from type \"{0}\", type was skipped");
+                        continue;
+                    }
+
+                    _platforms.Add(platform);
+                    Logger.Log(Logger.Level.APPLICATION, "Platform of type {0} registered", platform.GetType());
+                }
             }
         }
     }
