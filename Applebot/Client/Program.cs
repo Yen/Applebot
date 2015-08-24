@@ -32,6 +32,9 @@ namespace Client
 
             //ClientNew.Core core = new ClientNew.Core();
 
+            //core.StartPlatformTasks();
+            //core.WaitForPlatformTasks();
+
             try
             {
                 Logger.Log(Logger.Level.LOG, "Loading settings");

@@ -65,6 +65,11 @@ namespace ApplebotAPI
 
     public class Lmao : Platform
     {
+        public override void Run()
+        {
+            throw new NotImplementedException();
+        }
+
         public override void Send<T1>(T1 data)
         {
         }

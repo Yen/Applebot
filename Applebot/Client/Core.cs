@@ -15,25 +15,57 @@ namespace ClientNew
         private List<Platform> _platforms = new List<Platform>();
         private object _pluginLock = new object();
 
+        private List<Task> _platformTasks = new List<Task>();
+
         public Core()
         {
             ReloadPlugins();
 
-            Message message = new TwitchMessage("top", "kek");
-            ISender sender = _platforms[0];
+            //Message message = new TwitchMessage("top", "kek");
+            //ISender sender = _platforms[0];
 
-            IEnumerable<Command> commands = GetCommandsForPlatform(_platforms.First());
-            foreach (Command command in commands)
+            //IEnumerable<Command> commands = GetCommandsForPlatform(_platforms.First());
+            //foreach (Command command in commands)
+            //{
+            //    CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { message, sender });
+            //}
+        }
+
+        private void MessageRecievedEventHandler(object sender, Message e)
+        {
+            IEnumerable<Command> commands = GetCommandsForPlatform(sender as Platform);
+            foreach(Command command in commands)
             {
-                CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { message, sender });
+                CalculateLeastDerivedMessageHandle(e.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { e, sender });
             }
+        }
+
+        public void StartPlatformTasks()
+        {
+            if(_platformTasks.Any())
+            {
+                Logger.Log(Logger.Level.WARNING, "Platform tasks are already running, running them now would be dangerous");
+                return;
+            }
+
+            foreach (Platform platform in _platforms)
+            {
+                _platformTasks.Add(Task.Run(new Action(platform.Run)));
+            }
+        }
+
+        public void WaitForPlatformTasks()
+        {
+            while (_platformTasks.Any())
+                _platformTasks.First().ContinueWith((Task a) => { _platformTasks.Remove(a); }).Wait();
         }
 
         private IEnumerable<Command> GetCommandsForPlatform(Platform platform)
         {
-            lock(_pluginLock)
+            lock (_pluginLock)
             {
-                return _commands.Where(x => x.Item2.Contains(platform.GetType())).Select(x => x.Item1);
+                
+                return _commands.Where(x => x.Item2.Contains(platform.GetType()) || x.Item2.Contains(typeof(Platform))).Select(x => x.Item1);
             }
         }
 
@@ -41,7 +73,7 @@ namespace ClientNew
         {
             // Message type takes priority over sender type, this may be changed at a later date
 
-            lock(_pluginLock)
+            lock (_pluginLock)
             {
                 var methods = commandType.GetMethods().Where(x => x.Name == "HandleMessage").Where(x => x.GetParameters().Length == 2);
                 MethodInfo top = typeof(Command).GetMethod("HandleMessage").MakeGenericMethod(new Type[] { messageType, senderType });
@@ -193,7 +225,7 @@ namespace ClientNew
 
                     if (platformAttributes.Count() == 0)
                     {
-                        Logger.Log(Logger.Level.WARNING, "Command \"{0}\" has no platform attribute types, the command will never be executed", command.Name);
+                        Logger.Log(Logger.Level.WARNING, "Command \"{0}\" has no platform attribute types, the command will never be executed, adding a registrar using the base type \"{1}\" will cause the command to execute on all platforms", command.Name, typeof(Platform));
                     }
 
                     IEnumerable<Type> platformList = platformAttributes.Select(x => x.PlatformType);
@@ -240,6 +272,7 @@ namespace ClientNew
                         continue;
                     }
 
+                    platform.MessageRecieved += MessageRecievedEventHandler;
                     _platforms.Add(platform);
                     Logger.Log(Logger.Level.APPLICATION, "Platform of type {0} registered", platform.GetType());
                 }

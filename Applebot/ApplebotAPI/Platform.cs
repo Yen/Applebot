@@ -16,7 +16,7 @@ namespace ApplebotAPI
         public PlatformRegistrar(Type platformType)
         {
             PlatformType = platformType;
-            if (!PlatformType.IsSubclassOf(typeof(Platform)))
+            if (!PlatformType.IsSubclassOf(typeof(Platform)) && !(PlatformType == typeof(Platform)))
             {
                 throw new ArgumentException(string.Format("Argument must be a subclass of {0}", typeof(Platform)), "platformType");
             }
@@ -25,8 +25,17 @@ namespace ApplebotAPI
 
     public abstract class Platform : ISender
     {
+        public event EventHandler<Message> MessageRecieved;
+
         public abstract void Send<T1>(T1 data)
             where T1 : SendData;
+
+        public abstract void Run();
+
+        protected void ProcessMessage(Platform sender, Message message)
+        {
+            MessageRecieved(sender, message);
+        }
     }
 
     public class SendData
