@@ -7,7 +7,7 @@ using ApplebotAPI;
 
 namespace Test
 {
-    class TestPlatform : Platform
+    public class TestPlatform : Platform
     {
         public override void Send<T1>(T1 data)
         {

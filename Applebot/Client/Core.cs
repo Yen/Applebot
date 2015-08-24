@@ -16,6 +16,76 @@ namespace ClientNew
 
         public Core()
         {
+            ReloadPlugins();
+
+            Message message = new TwitchMessage("top", "kek");
+            ISender sender = _platforms[0];
+
+            IEnumerable<Command> commands = GetCommandsForPlatform(_platforms.First());
+            foreach (Command command in commands)
+            {
+                CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { message, sender });
+            }
+        }
+
+        private IEnumerable<Command> GetCommandsForPlatform(Platform platform)
+        {
+            return _commands.Where(x => x.Item2.Contains(platform.GetType())).Select(x => x.Item1);
+        }
+
+        private MethodInfo CalculateLeastDerivedMessageHandle(Type messageType, Type senderType, Type commandType)
+        {
+            // Message type takes priority over sender type, this may be changed at a later date
+
+            var methods = commandType.GetMethods().Where(x => x.Name == "HandleMessage").Where(x => x.GetParameters().Length == 2);
+            MethodInfo top = typeof(Command).GetMethod("HandleMessage").MakeGenericMethod(new Type[] { messageType, senderType });
+            bool hasMessage = false;
+            foreach (MethodInfo method in methods)
+            {
+                var parameters = method.GetParameters();
+
+                var a = parameters[1].ParameterType.GetInterfaces();
+
+                if ((parameters[0].ParameterType == messageType) && (parameters[1].ParameterType == senderType))
+                {
+                    return method;
+                }
+
+                if (!hasMessage && parameters[0].ParameterType == messageType)
+                {
+                    if (method.IsGenericMethod)
+                    {
+                        if (!Enumerable.SequenceEqual(parameters[1].ParameterType.GetInterfaces(), new Type[] { typeof(ISender) }))
+                            continue;
+                        top = method.MakeGenericMethod(new Type[] { typeof(ISender) });
+                    }
+                    else
+                        top = method;
+                    hasMessage = true;
+                }
+
+                if (!hasMessage && parameters[1].ParameterType == senderType)
+                {
+                    if (method.IsGenericMethod)
+                    {
+                        if (!Enumerable.SequenceEqual(parameters[0].ParameterType.GetInterfaces(), new Type[0]) || !parameters[0].ParameterType.IsSubclassOf(typeof(Message)))
+                            continue;
+                        top = method.MakeGenericMethod(new Type[] { typeof(Message) });
+                    }
+                    else
+                        top = method;
+                }
+            }
+            return top;
+        }
+
+        public void ReloadPlugins()
+        {
+            Logger.Log(Logger.Level.APPLICATION, "Reloading plugins");
+
+            _commands.Clear();
+            _platforms.Clear();
+
             if (!Directory.Exists("Plugins"))
             {
                 Logger.Log(Logger.Level.WARNING, "Could not fild plugins folder, no plugins will be loaded");
@@ -73,7 +143,7 @@ namespace ClientNew
             Logger.Log(Logger.Level.APPLICATION, "A total of {0} valid {1} found in assemblies", types.Count, (types.Count == 1) ? "type was" : "types were");
 
             List<Type> commandTypes = new List<Type>();
-           
+
             foreach (Type type in types)
             {
                 if (type.IsSubclassOf(typeof(Command)))
@@ -86,6 +156,12 @@ namespace ClientNew
 
             foreach (Type type in commandTypes)
             {
+                if (_commands.Any(x => x.Item1.GetType() == type))
+                {
+                    Logger.Log(Logger.Level.ERROR, "A command of type \"{0}\" is already registered, skipping", type);
+                    continue;
+                }
+
                 ConstructorInfo constructor = type.GetConstructor(new Type[0]);
                 if (constructor == null || !constructor.IsPublic)
                 {
@@ -131,6 +207,12 @@ namespace ClientNew
 
             foreach (Type type in platformTypes)
             {
+                if (_platforms.Any(x => x.GetType() == type))
+                {
+                    Logger.Log(Logger.Level.ERROR, "A platform of type \"{0}\" is already registered, skipping", type);
+                    continue;
+                }
+
                 ConstructorInfo constructor = type.GetConstructor(new Type[0]);
                 if (constructor == null || !constructor.IsPublic)
                 {
