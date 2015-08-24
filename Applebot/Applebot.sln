@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22823.1
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{DC626F05-74E0-4934-85BA-42DD1AAFB8AD}"
 EndProject
@@ -18,6 +18,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{C93FEB90-7DF9-458A-A03A-2A91FB38A0CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QueueCommand", "QueueCommand\QueueCommand.csproj", "{0A8EA730-6E57-43A6-8B2C-98917F7365AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,6 +51,10 @@ Global
 		{C93FEB90-7DF9-458A-A03A-2A91FB38A0CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C93FEB90-7DF9-458A-A03A-2A91FB38A0CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C93FEB90-7DF9-458A-A03A-2A91FB38A0CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A8EA730-6E57-43A6-8B2C-98917F7365AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A8EA730-6E57-43A6-8B2C-98917F7365AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A8EA730-6E57-43A6-8B2C-98917F7365AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A8EA730-6E57-43A6-8B2C-98917F7365AB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -58,5 +64,6 @@ Global
 		{9172A70E-F972-4F2A-B7A6-9F5ED3B4B089} = {9EB18A30-43B9-4D69-9B4E-75CBC78D6C78}
 		{BBF66E9C-A2D8-4DE4-9586-2712062FFAF6} = {9EB18A30-43B9-4D69-9B4E-75CBC78D6C78}
 		{C93FEB90-7DF9-458A-A03A-2A91FB38A0CF} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
+		{0A8EA730-6E57-43A6-8B2C-98917F7365AB} = {9EB18A30-43B9-4D69-9B4E-75CBC78D6C78}
 	EndGlobalSection
 EndGlobal
