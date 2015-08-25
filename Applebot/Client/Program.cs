@@ -30,11 +30,12 @@ namespace Client
         {
             Console.WriteLine("Applebot");
 
-            //ClientNew.Core core = new ClientNew.Core();
+#if BETA
+            ClientNew.Core core = new ClientNew.Core();
 
-            //core.StartPlatformTasks();
-            //core.WaitForPlatformTasks();
-
+            core.StartPlatformTasks();
+            core.WaitForPlatformTasks();
+#else
             try
             {
                 Logger.Log(Logger.Level.LOG, "Loading settings");
@@ -59,6 +60,7 @@ namespace Client
             {
                 Logger.Log(Logger.Level.EXCEPTION, "Program was excaped due to manual exception being thrown ({0})", e.Message);
             }
+#endif
 
             Console.WriteLine("Program ended");
             Console.ReadKey();
