@@ -22,12 +22,12 @@ namespace ClientNew
             ReloadPlugins();
         }
 
-        private void MessageRecievedEventHandler(object sender, Message e)
+        private void MessageRecievedEventHandler(object sender, Message message)
         {
             IEnumerable<Command> commands = GetCommandsForPlatform(sender as Platform);
             foreach (Command command in commands)
             {
-                CalculateLeastDerivedMessageHandle(e.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { e, sender });
+                CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { message, sender });
             }
         }
 
