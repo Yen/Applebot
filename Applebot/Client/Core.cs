@@ -20,21 +20,12 @@ namespace ClientNew
         public Core()
         {
             ReloadPlugins();
-
-            //Message message = new TwitchMessage("top", "kek");
-            //ISender sender = _platforms[0];
-
-            //IEnumerable<Command> commands = GetCommandsForPlatform(_platforms.First());
-            //foreach (Command command in commands)
-            //{
-            //    CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { message, sender });
-            //}
         }
 
         private void MessageRecievedEventHandler(object sender, Message e)
         {
             IEnumerable<Command> commands = GetCommandsForPlatform(sender as Platform);
-            foreach(Command command in commands)
+            foreach (Command command in commands)
             {
                 CalculateLeastDerivedMessageHandle(e.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { e, sender });
             }
@@ -42,7 +33,7 @@ namespace ClientNew
 
         public void StartPlatformTasks()
         {
-            if(_platformTasks.Any())
+            if (_platformTasks.Any())
             {
                 Logger.Log(Logger.Level.WARNING, "Platform tasks are already running, running them now would be dangerous");
                 return;
@@ -50,7 +41,10 @@ namespace ClientNew
 
             foreach (Platform platform in _platforms)
             {
-                _platformTasks.Add(Task.Run(new Action(platform.Run)));
+                if (platform.State == PlatformState.Ready)
+                    _platformTasks.Add(Task.Run(new Action(platform.Run)));
+                else
+                    Logger.Log(Logger.Level.WARNING, "Platform \"{0}\" state is not ready, platform will not be started", platform.GetType());
             }
         }
 
@@ -64,7 +58,6 @@ namespace ClientNew
         {
             lock (_pluginLock)
             {
-                
                 return _commands.Where(x => x.Item2.Contains(platform.GetType()) || x.Item2.Contains(typeof(Platform))).Select(x => x.Item1);
             }
         }
@@ -93,9 +86,9 @@ namespace ClientNew
                     {
                         if (method.IsGenericMethod)
                         {
-                            if (!Enumerable.SequenceEqual(parameters[1].ParameterType.GetInterfaces(), new Type[] { typeof(ISender) }))
+                            if (!Enumerable.SequenceEqual(parameters[1].ParameterType.GetInterfaces(), new Type[] { typeof(Platform) }))
                                 continue;
-                            top = method.MakeGenericMethod(new Type[] { typeof(ISender) });
+                            top = method.MakeGenericMethod(new Type[] { typeof(Platform) });
                         }
                         else
                             top = method;
@@ -165,8 +158,22 @@ namespace ClientNew
 
                 List<Type> types = new List<Type>();
 
+                AssemblyName localAPI = Assembly.GetExecutingAssembly().GetReferencedAssemblies().First(x => x.Name == "ApplebotAPI");
+
                 foreach (Assembly assembly in assemblies)
                 {
+                    AssemblyName api = assembly.GetReferencedAssemblies().FirstOrDefault(x => x.Name == "ApplebotAPI");
+                    if (api == null)
+                    {
+                        Logger.Log(Logger.Level.WARNING, "Assembly \"{0}\" does not contain a reference to \"{1}\", skipping", assembly.GetName().Name, localAPI);
+                        continue;
+                    }
+                    if (api.Version != localAPI.Version)
+                    {
+                        Logger.Log(Logger.Level.WARNING, "Assembly \"{0}\" contains a different API version ({1}) to local API version ({2}), please rebuild the plugin to allow for stable use, skipping", assembly.GetName().Name, api.Version, localAPI.Version);
+                        continue;
+                    }
+
                     var t = assembly.GetTypes();
                     if (t.Length == 0)
                     {

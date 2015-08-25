@@ -16,7 +16,6 @@ namespace PingCommand
         public override void HandleMessage<T1, T2>(T1 message, T2 sender)
         {
             Logger.Log("Ping command thing!");
-            sender.Send(new SendData("Pong"));
         }
     }
 }

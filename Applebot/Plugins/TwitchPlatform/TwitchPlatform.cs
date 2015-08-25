@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace TwitchPlatform
 {
@@ -18,6 +19,46 @@ namespace TwitchPlatform
 
         private static readonly string _host = "irc.twitch.tv";
         private static readonly int _port = 6667;
+
+        private string _nick;
+        private string _pass;
+        private string _channel;
+
+        public TwitchPlatform()
+        {
+            if (!File.Exists("Settings/twitchsettings.xml"))
+            {
+                Logger.Log(Logger.Level.ERROR, "Settings file \"{0}\" does not exist", "twitchsettings.xml");
+                State = PlatformState.Unready;
+                return;
+            }
+            XmlDocument doc = new XmlDocument();
+            try
+            {
+                doc.Load("Settings/twitchsettings.xml");
+            }
+            catch
+            {
+                Logger.Log(Logger.Level.ERROR, "Error reading settings file \"{0}\"", "Settings/twitchsettings.xml");
+                State = PlatformState.Unready;
+                return;
+            }
+
+            var nick = doc.SelectSingleNode("settings/nick");
+            var pass = doc.SelectSingleNode("settings/pass");
+            var channel = doc.SelectSingleNode("settings/channel");
+
+            if((nick == null) || (pass == null) || (channel == null))
+            {
+                Logger.Log(Logger.Level.ERROR, "Settings file \"{0}\" is missing required values", "Settings/twitchsettings.xml");
+                State = PlatformState.Unready;
+                return;
+            }
+
+            _nick = nick.InnerXml;
+            _pass = pass.InnerXml;
+            _channel = channel.InnerXml;
+        }
 
         public override void Run()
         {
@@ -82,11 +123,11 @@ namespace TwitchPlatform
             _writer = new StreamWriter(_client.GetStream());
 
             //TODO: Config loading
-            
-            SendString("PASS {0}", "oauth");
-            SendString("NICK {0}", "zogzer");
 
-            SendString("JOIN {0}", "#zogzer");
+            SendString("PASS {0}", _pass);
+            SendString("NICK {0}", _nick);
+
+            SendString("JOIN #{0}", _channel);
         }
 
         public override void Send<T1>(T1 data)

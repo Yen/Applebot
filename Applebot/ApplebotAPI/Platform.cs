@@ -23,9 +23,17 @@ namespace ApplebotAPI
         }
     }
 
-    public abstract class Platform : ISender
+    public enum PlatformState
+    {
+        Ready,
+        Unready
+    }
+
+    public abstract class Platform
     {
         public event EventHandler<Message> MessageRecieved;
+
+        public PlatformState State { get; protected set; } = PlatformState.Ready;
 
         public abstract void Send<T1>(T1 data)
             where T1 : SendData;
@@ -46,11 +54,5 @@ namespace ApplebotAPI
         {
             Content = content;
         }
-    }
-
-    public interface ISender
-    {
-        void Send<T1>(T1 data)
-            where T1 : SendData;
     }
 }

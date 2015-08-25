@@ -40,7 +40,7 @@ namespace ApplebotAPI
 
         public abstract void HandleMessage<T1, T2>(T1 message, T2 sender)
             where T1 : Message
-            where T2 : ISender;
+            where T2 : Platform;
     }
 
     //Test
