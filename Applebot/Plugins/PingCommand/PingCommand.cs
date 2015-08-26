@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace PingCommand
 {
-    [PlatformRegistrar(typeof(Platform))]
     public class PingCommand : Command
     {
         public PingCommand() : base("PingCommand")

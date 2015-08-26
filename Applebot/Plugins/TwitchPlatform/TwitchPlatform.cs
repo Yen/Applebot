@@ -10,6 +10,17 @@ using System.Xml;
 
 namespace TwitchPlatform
 {
+
+    public class TwitchMessage : Message
+    {
+        public string User { get; private set; }
+
+        public TwitchMessage(string content, string user) : base(content)
+        {
+            User = user;
+        }
+    }
+
     public class TwitchPlatform : Platform
     {
         private TcpClient _client;
@@ -121,8 +132,6 @@ namespace TwitchPlatform
 
             _reader = new StreamReader(_client.GetStream());
             _writer = new StreamWriter(_client.GetStream());
-
-            //TODO: Config loading
 
             SendString("PASS {0}", _pass);
             SendString("NICK {0}", _nick);

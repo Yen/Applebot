@@ -58,7 +58,7 @@ namespace ClientNew
         {
             lock (_pluginLock)
             {
-                return _commands.Where(x => x.Item2.Contains(platform.GetType()) || x.Item2.Contains(typeof(Platform))).Select(x => x.Item1);
+                return _commands.Where(x => x.Item2.Count() == 0 || x.Item2.Contains(platform.GetType())).Select(x => x.Item1);
             }
         }
 
@@ -229,11 +229,6 @@ namespace ClientNew
                     }
 
                     IEnumerable<PlatformRegistrar> platformAttributes = type.GetCustomAttributes<PlatformRegistrar>(true).Distinct();
-
-                    if (platformAttributes.Count() == 0)
-                    {
-                        Logger.Log(Logger.Level.WARNING, "Command \"{0}\" has no platform attribute types, the command will never be executed, adding a registrar using the base type \"{1}\" will cause the command to execute on all platforms", command.Name, typeof(Platform));
-                    }
 
                     IEnumerable<Type> platformList = platformAttributes.Select(x => x.PlatformType);
 

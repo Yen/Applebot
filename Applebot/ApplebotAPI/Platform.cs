@@ -16,7 +16,7 @@ namespace ApplebotAPI
         public PlatformRegistrar(Type platformType)
         {
             PlatformType = platformType;
-            if (!PlatformType.IsSubclassOf(typeof(Platform)) && !(PlatformType == typeof(Platform)))
+            if (!PlatformType.IsSubclassOf(typeof(Platform)))
             {
                 throw new ArgumentException(string.Format("Argument must be a subclass of {0}", typeof(Platform)), "platformType");
             }
