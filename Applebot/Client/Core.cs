@@ -12,7 +12,7 @@ namespace ClientNew
     class Core
     {
         private List<Tuple<Command, IEnumerable<Type>>> _commands = new List<Tuple<Command, IEnumerable<Type>>>();
-        private List<Platform> _platforms = new List<Platform>();
+        private List<Tuple<Platform, Dictionary<Type, DateTime>>> _platforms = new List<Tuple<Platform, Dictionary<Type, DateTime>>>();
         private object _pluginLock = new object();
 
         private List<Task> _platformTasks = new List<Task>();
@@ -25,9 +25,15 @@ namespace ClientNew
         private void MessageRecievedEventHandler(object sender, Message message)
         {
             IEnumerable<Command> commands = GetCommandsForPlatform(sender as Platform);
+            Dictionary<Type, DateTime> platformOverflows = _platforms.Find(x => x.Item1 == sender as Platform).Item2;
             foreach (Command command in commands)
             {
+                // TODO: Support for elevated user override 
+                if (platformOverflows.ContainsKey(command.GetType()) && !(platformOverflows[command.GetType()] < DateTime.UtcNow - command.Overflow))
+                    continue;
+
                 CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { message, sender });
+                platformOverflows[command.GetType()] = DateTime.UtcNow;
             }
         }
 
@@ -39,8 +45,9 @@ namespace ClientNew
                 return;
             }
 
-            foreach (Platform platform in _platforms)
+            foreach (var data in _platforms)
             {
+                Platform platform = data.Item1;
                 if (platform.State == PlatformState.Ready)
                     _platformTasks.Add(Task.Run(new Action(platform.Run)));
                 else
@@ -275,7 +282,7 @@ namespace ClientNew
                     }
 
                     platform.MessageRecieved += MessageRecievedEventHandler;
-                    _platforms.Add(platform);
+                    _platforms.Add(Tuple.Create(platform, new Dictionary<Type, DateTime>()));
                     Logger.Log(Logger.Level.APPLICATION, "Platform of type {0} registered", platform.GetType());
                 }
             }
