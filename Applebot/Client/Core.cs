@@ -24,16 +24,19 @@ namespace ClientNew
 
         private void MessageRecievedEventHandler(object sender, Message message)
         {
-            IEnumerable<Command> commands = GetCommandsForPlatform(sender as Platform);
-            Dictionary<Type, DateTime> platformOverflows = _platforms.Find(x => x.Item1 == sender as Platform).Item2;
-            foreach (Command command in commands)
+            lock(_pluginLock)
             {
-                // TODO: Support for elevated user override 
-                if (platformOverflows.ContainsKey(command.GetType()) && !(platformOverflows[command.GetType()] < DateTime.UtcNow - command.Overflow))
-                    continue;
+                IEnumerable<Command> commands = GetCommandsForPlatform(sender as Platform);
+                Dictionary<Type, DateTime> platformOverflows = _platforms.Find(x => x.Item1 == sender as Platform).Item2;
+                foreach (Command command in commands)
+                {
+                    // TODO: Support for elevated user override 
+                    if (platformOverflows.ContainsKey(command.GetType()) && !(platformOverflows[command.GetType()] < DateTime.UtcNow - command.Overflow))
+                        continue;
 
-                CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { message, sender });
-                platformOverflows[command.GetType()] = DateTime.UtcNow;
+                    CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { message, sender });
+                    platformOverflows[command.GetType()] = DateTime.UtcNow;
+                }
             }
         }
 
