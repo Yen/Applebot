@@ -11,16 +11,6 @@ using System.Xml;
 namespace TwitchPlatform
 {
 
-    public class TwitchMessage : Message
-    {
-        public string User { get; private set; }
-
-        public TwitchMessage(string content, string user) : base(content)
-        {
-            User = user;
-        }
-    }
-
     public class TwitchPlatform : Platform
     {
         private TcpClient _client;
@@ -109,7 +99,7 @@ namespace TwitchPlatform
                         string user = parts[0].Split('!')[0].Substring(1);
                         string message = line.Substring(parts[0].Length + parts[1].Length + parts[2].Length + 4);
 
-                        ProcessMessage(this, new TwitchMessage(message, user));
+                        ProcessMessage(this, new Message(user, message));
                     }
                 }
 
@@ -141,7 +131,7 @@ namespace TwitchPlatform
 
         public override void Send<T1>(T1 data)
         {
-            Logger.Log("Send: {0}", data.Content);
+            SendString("PRIVMSG #{0} :{1}", _channel, data.Content);
         }
 
         private void SendString(string format, params string[] args)

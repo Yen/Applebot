@@ -24,7 +24,7 @@ namespace ClientNew
 
         private void MessageRecievedEventHandler(object sender, Message message)
         {
-            lock(_pluginLock)
+            lock (_pluginLock)
             {
                 IEnumerable<Command> commands = GetCommandsForPlatform(sender as Platform);
                 Dictionary<Type, DateTime> platformOverflows = _platforms.Find(x => x.Item1 == sender as Platform).Item2;
@@ -34,27 +34,44 @@ namespace ClientNew
                     if (platformOverflows.ContainsKey(command.GetType()) && !(platformOverflows[command.GetType()] < DateTime.UtcNow - command.Overflow))
                         continue;
 
+                    if (!CheckExpressions(message, command))
+                        continue;
+
+                    Logger.Log(Logger.Level.APPLICATION, "Platform \"{0}\" activated command \"{1}\"", sender.GetType(), command.Name);
                     CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { message, sender });
                     platformOverflows[command.GetType()] = DateTime.UtcNow;
                 }
             }
         }
 
+        private bool CheckExpressions(Message message, Command command)
+        {
+            foreach (var regex in command.Expressions)
+            {
+                if (regex.Match(message.Content).Success)
+                    return true;
+            }
+            return false;
+        }
+
         public void StartPlatformTasks()
         {
-            if (_platformTasks.Any())
+            lock (_pluginLock)
             {
-                Logger.Log(Logger.Level.WARNING, "Platform tasks are already running, running them now would be dangerous");
-                return;
-            }
+                if (_platformTasks.Any())
+                {
+                    Logger.Log(Logger.Level.WARNING, "Platform tasks are already running, running them now would be dangerous");
+                    return;
+                }
 
-            foreach (var data in _platforms)
-            {
-                Platform platform = data.Item1;
-                if (platform.State == PlatformState.Ready)
-                    _platformTasks.Add(Task.Run(new Action(platform.Run)));
-                else
-                    Logger.Log(Logger.Level.WARNING, "Platform \"{0}\" state is not ready, platform will not be started", platform.GetType());
+                foreach (var data in _platforms)
+                {
+                    Platform platform = data.Item1;
+                    if (platform.State == PlatformState.Ready)
+                        _platformTasks.Add(Task.Run(new Action(platform.Run)));
+                    else
+                        Logger.Log(Logger.Level.WARNING, "Platform \"{0}\" state is not ready, platform will not be started", platform.GetType());
+                }
             }
         }
 
@@ -72,22 +89,20 @@ namespace ClientNew
             }
         }
 
-        private MethodInfo CalculateLeastDerivedMessageHandle(Type messageType, Type senderType, Type commandType)
+        private MethodInfo CalculateLeastDerivedMessageHandle(Type messageType, Type platformType, Type commandType)
         {
-            // Message type takes priority over sender type, this may be changed at a later date
+            // Message type takes priority over platform type, this may be changed at a later date
 
             lock (_pluginLock)
             {
                 var methods = commandType.GetMethods().Where(x => x.Name == "HandleMessage").Where(x => x.GetParameters().Length == 2);
-                MethodInfo top = typeof(Command).GetMethod("HandleMessage").MakeGenericMethod(new Type[] { messageType, senderType });
+                MethodInfo top = typeof(Command).GetMethod("HandleMessage").MakeGenericMethod(new Type[] { messageType, platformType });
                 bool hasMessage = false;
                 foreach (MethodInfo method in methods)
                 {
                     var parameters = method.GetParameters();
 
-                    var a = parameters[1].ParameterType.GetInterfaces();
-
-                    if ((parameters[0].ParameterType == messageType) && (parameters[1].ParameterType == senderType))
+                    if ((parameters[0].ParameterType == messageType) && (parameters[1].ParameterType == platformType))
                     {
                         return method;
                     }
@@ -105,7 +120,7 @@ namespace ClientNew
                         hasMessage = true;
                     }
 
-                    if (!hasMessage && parameters[1].ParameterType == senderType)
+                    if (!hasMessage && parameters[1].ParameterType == platformType)
                     {
                         if (method.IsGenericMethod)
                         {

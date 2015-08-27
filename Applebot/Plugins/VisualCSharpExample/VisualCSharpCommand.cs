@@ -9,7 +9,7 @@ namespace VisualCSharpExample
         public VisualCSharpCommand() : base("Visual CSharp Command")
         { }
 
-        public override void HandleMessage<T1, T2>(T1 message, T2 sender)
+        public override void HandleMessage<T1, T2>(T1 message, T2 platform)
         {
             Logger.Log("Response from Visual CSharp Command");
         }

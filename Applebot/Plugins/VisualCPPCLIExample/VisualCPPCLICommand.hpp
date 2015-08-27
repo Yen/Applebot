@@ -12,7 +12,7 @@ namespace VisualCPPCLIExample
 		VisualCPPCLICommand();
 
 		generic<class T1, class T2>
-			void HandleMessage(T1 message, T2 sender) override;
+			void HandleMessage(T1 message, T2 platform) override;
 	};
 
 }

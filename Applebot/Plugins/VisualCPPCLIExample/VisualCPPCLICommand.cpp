@@ -8,7 +8,7 @@ namespace VisualCPPCLIExample
 	{}
 
 	generic<class T1, class T2>
-		void VisualCPPCLICommand::HandleMessage(T1 message, T2 sender)
+		void VisualCPPCLICommand::HandleMessage(T1 message, T2 platform)
 		{
 			Logger::Log("Response from Visual CPP CLI Command");
 		}

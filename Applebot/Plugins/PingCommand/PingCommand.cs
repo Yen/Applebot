@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PingCommand
@@ -10,11 +11,13 @@ namespace PingCommand
     public class PingCommand : Command
     {
         public PingCommand() : base("PingCommand")
-        { }
-
-        public override void HandleMessage<T1, T2>(T1 message, T2 sender)
         {
-            Logger.Log("Ping command thing!");
+            Expressions.Add(new Regex("(?i)^!ping\\b"));
+        }
+
+        public override void HandleMessage<T1, T2>(T1 message, T2 platform)
+        {
+            platform.Send(new SendData("Pong!"));
         }
     }
 }

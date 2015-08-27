@@ -40,9 +40,9 @@ namespace ApplebotAPI
 
         public abstract void Run();
 
-        protected void ProcessMessage(Platform sender, Message message)
+        protected void ProcessMessage(Platform platform, Message message)
         {
-            MessageRecieved(sender, message);
+            MessageRecieved(platform, message);
         }
     }
 
