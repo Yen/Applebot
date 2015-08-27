@@ -30,6 +30,12 @@ namespace ApplebotAPI
             public static readonly Level PLATFORM = new Level("Platform", ConsoleColor.DarkGreen);
         }
 
+        /// <summary>
+        /// Print formatted text to the screen with a specific level tag
+        /// </summary>
+        /// <param name="level">The level that represents the content of the message</param>
+        /// <param name="format">A composite format string</param>
+        /// <param name="args">The objects to format</param>
         public static void Log(Level level, string format, params object[] args)
         {
             lock (_lock)
@@ -54,6 +60,11 @@ namespace ApplebotAPI
             }
         }
 
+        /// <summary>
+        /// Print text to the screen
+        /// </summary>
+        /// <param name="format">A composite format string</param>
+        /// <param name="args">The objects to format</param>
         public static void Log(string format, params object[] args)
         {
             Log(null, format, args);
