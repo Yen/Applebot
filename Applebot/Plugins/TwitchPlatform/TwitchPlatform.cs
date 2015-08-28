@@ -1,10 +1,12 @@
 ﻿using ApplebotAPI;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -49,7 +51,7 @@ namespace TwitchPlatform
             var pass = doc.SelectSingleNode("settings/pass");
             var channel = doc.SelectSingleNode("settings/channel");
 
-            if((nick == null) || (pass == null) || (channel == null))
+            if ((nick == null) || (pass == null) || (channel == null))
             {
                 Logger.Log(Logger.Level.ERROR, "Settings file \"{0}\" is missing required values", "Settings/twitchsettings.xml");
                 State = PlatformState.Unready;
@@ -76,7 +78,7 @@ namespace TwitchPlatform
                 {
                     if (line.StartsWith("PING"))
                     {
-                        SendString("PONG applebot");
+                        SendString("PONG applebot", true);
                         continue;
                     }
 
@@ -123,24 +125,41 @@ namespace TwitchPlatform
             _reader = new StreamReader(_client.GetStream());
             _writer = new StreamWriter(_client.GetStream());
 
-            SendString("PASS {0}", _pass);
-            SendString("NICK {0}", _nick);
+            SendString(string.Format("PASS {0}", _pass), true);
+            SendString(string.Format("NICK {0}", _nick), true);
 
-            SendString("JOIN #{0}", _channel);
+            SendString(string.Format("JOIN #{0}", _channel), true);
         }
+
+        // TODO: This gives elevated a 2:1 priority, obviously it should be 1:0, .NET threading knowledge is required
+
+        object _sendLock = new object();
 
         public override void Send<T1>(T1 data)
         {
-            SendString("PRIVMSG #{0} :{1}", _channel, data.Content);
+            if (!data.Elevated)
+            {
+                lock (_sendLock)
+                {
+                    SendString(string.Format("PRIVMSG #{0} :{1}", _channel, data.Content), data.Elevated);
+                    return;
+                }
+            }
+            SendString(string.Format("PRIVMSG #{0} :{1}", _channel, data.Content), data.Elevated);
         }
 
-        private void SendString(string format, params string[] args)
+        private void SendString(string data, bool priority)
         {
             lock (_streamLock)
             {
-                _writer.WriteLine(string.Format(format, args));
+                _writer.WriteLine(data);
                 _writer.Flush();
             }
+        }
+
+        public override bool CheckElevatedStatus(string sender)
+        {
+            return false;
         }
     }
 }

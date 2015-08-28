@@ -30,15 +30,16 @@ namespace ClientNew
                 Dictionary<Type, DateTime> platformOverflows = _platforms.Find(x => x.Item1 == sender as Platform).Item2;
                 foreach (Command command in commands)
                 {
-                    // TODO: Support for elevated user override 
-                    if (platformOverflows.ContainsKey(command.GetType()) && !(platformOverflows[command.GetType()] < DateTime.UtcNow - command.Overflow))
-                        continue;
+                    if (!(sender as Platform).CheckElevatedStatus(message.Sender))
+                        if (platformOverflows.ContainsKey(command.GetType()) && !(platformOverflows[command.GetType()] < DateTime.UtcNow - command.Overflow))
+                            continue;
 
                     if (!CheckExpressions(message, command))
                         continue;
 
                     Logger.Log(Logger.Level.APPLICATION, "Platform \"{0}\" activated command \"{1}\"", sender.GetType(), command.Name);
-                    CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType()).Invoke(command, new object[] { message, sender });
+                    MethodInfo method = CalculateLeastDerivedMessageHandle(message.GetType(), sender.GetType(), command.GetType());
+                    Task.Run(new Action(() => { method.Invoke(command, new object[] { message, sender }); }));
                     platformOverflows[command.GetType()] = DateTime.UtcNow;
                 }
             }

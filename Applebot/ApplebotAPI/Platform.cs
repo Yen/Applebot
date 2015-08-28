@@ -70,6 +70,18 @@ namespace ApplebotAPI
         {
             MessageRecieved(platform, message);
         }
+
+        /// <summary>
+        /// Checks whether a sender has elevated status to this backend
+        /// </summary>
+        /// <param name="sender">The sender that is being queried, this can be null if the command has
+        /// no specific sender entity</param>
+        /// <returns>This method returns false by default and should return false if there is no
+        /// specific elevated users on this backend</returns>
+        public virtual bool CheckElevatedStatus(string sender)
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -82,10 +94,17 @@ namespace ApplebotAPI
         /// </summary>
         public string Content { get; private set; }
 
+        /// <summary>
+        /// If elevated the command should get a priority when the message is being sent
+        /// </summary>
+        public bool Elevated { get; private set; }
+
         /// <param name="content">A string that represets the data to be sent</param>
-        public SendData(string content)
+        /// <param name="elevated">If the data should have elevated status when being sent</param>
+        public SendData(string content, bool elevated)
         {
             Content = content;
+            Elevated = elevated;
         }
     }
 }
