@@ -4,11 +4,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace TwitchPlatform
 {
@@ -136,7 +139,7 @@ namespace TwitchPlatform
 
         // TODO: This gives elevated a 2:1 priority, obviously it should be 1:0, .NET threading knowledge is required
 
-        object _sendLock = new object();
+        private object _sendLock = new object();
 
         public override void Send<T1>(T1 data)
         {
@@ -172,8 +175,79 @@ namespace TwitchPlatform
             }
         }
 
+        private object _tmiLock = new object();
+        private string[] _tmiPrevious;
+        private DateTime _tmiLastUpdate;
+        private Task _tmiUpdateTask;
+
         public override bool CheckElevatedStatus(string sender)
         {
+            lock (_tmiLock)
+            {
+                if ((_tmiUpdateTask == null) || _tmiUpdateTask.IsCompleted)
+                    if ((_tmiLastUpdate == null) || (_tmiLastUpdate < (DateTime.UtcNow - TimeSpan.FromSeconds(30))))
+                    {
+                        _tmiUpdateTask = new Task(new Action(() =>
+                        {
+                            while (true)
+                            {
+                                try
+                                {
+                                    Logger.Log(Logger.Level.PLATFORM, "Updating Twitch moderator list");
+
+                                    XmlDocument doc = new XmlDocument();
+                                    using (WebClient client = new WebClient())
+                                    {
+                                        byte[] buffer = client.DownloadData("http://tmi.twitch.tv/group/user/" + _channel + "/chatters");
+                                        XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(buffer, XmlDictionaryReaderQuotas.Max);
+                                        XElement element = XElement.Load(reader);
+
+                                        doc.LoadXml(element.ToString());
+                                    }
+                                    List<string> elevated = new List<string>();
+
+                                    XmlNodeList moderators = doc.SelectNodes("//chatters/moderators//item");
+                                    foreach (XmlNode user in moderators)
+                                        elevated.Add(user.InnerXml);
+                                    XmlNodeList staff = doc.SelectNodes("//chatters/staff//item");
+                                    foreach (XmlNode user in staff)
+                                        elevated.Add(user.InnerXml);
+                                    XmlNodeList admins = doc.SelectNodes("//chatters/admins//item");
+                                    foreach (XmlNode user in admins)
+                                        elevated.Add(user.InnerXml);
+                                    XmlNodeList globals = doc.SelectNodes("//chatters/global_mods//item");
+                                    foreach (XmlNode user in globals)
+                                        elevated.Add(user.InnerXml);
+
+                                    if (elevated.Any())
+                                    {
+                                        _tmiPrevious = elevated.ToArray();
+                                    }
+                                    break;
+                                }
+                                catch
+                                {
+                                    Logger.Log(Logger.Level.ERROR, "Error fetching Twitch moderator list, retrying");
+                                }
+                            }
+                            Logger.Log(Logger.Level.PLATFORM, "Twitch moderator list updated");
+                            _tmiLastUpdate = DateTime.UtcNow;
+                        }));
+                        _tmiUpdateTask.Start();
+                    }
+            }
+
+            if (sender == _nick)
+                return true;
+
+            string[] mods = _tmiPrevious;
+
+            if (mods == null)
+                return false;
+
+            if (mods.Contains(sender))
+                return true;
+
             return false;
         }
     }
