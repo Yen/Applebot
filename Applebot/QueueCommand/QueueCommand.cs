@@ -32,6 +32,7 @@ namespace QueueCommand
             string username = message.User;
             bool asOwner = false;
             if (message.User == owner) { asOwner = true; }
+            if (_data.Manager.GetUserInfo(message.User).Elevated) { asOwner = true; }
 
             if (parts[0] == "!next")
                 if (asOwner)
@@ -82,41 +83,17 @@ namespace QueueCommand
                         return;
                     }
 
+                    string response = message.Content.Substring(parts[0].Length + 1);
+
                     string[] temp = { username };
                     Queue.Add(temp.Concat(parts).ToArray());
-                    _data.Core.WriteChatMessage("Added " + username + " to queue as " + parts[1] + ". You are at position " + Queue.Count() + ".", false);
+                    _data.Core.WriteChatMessage("Added " + username + " to queue as " + response + ". You are at position " + Queue.Count() + ".", false);
                     return;
                 }
             }
 
             if (parts[0] == "!leave")
             {
-
-                if (asOwner && (parts.Length > 1))
-                {
-                    bool plsgo = false;
-
-                    foreach (string[] item in Queue.ToList())
-                    {
-                        if (item[0] == parts[1])
-                        {
-                            Queue.Remove(item);
-                            plsgo = true;
-                        }
-                    }
-
-                    if (plsgo)
-                    {
-                        _data.Core.WriteChatMessage("User was removed from queue.", false);
-                        return;
-                    }
-                    else
-                    {
-                        _data.Core.WriteChatMessage("User is not in queue.", false);
-                        return;
-                    }
-
-                }
 
 
                 if (Queue.Count == 0)
@@ -149,8 +126,36 @@ namespace QueueCommand
 
             if (parts[0] == "!queue")
             {
-                if ((parts.Length > 1) && (asOwner = true))
+                if ((parts.Length > 1) && (asOwner == true))
                 {
+                    if (parts[1] == "remove" && parts.Length > 2)
+                    {
+                        bool plsgo = false;
+
+                        string target = parts[2].ToLower();
+
+                        foreach (string[] item in Queue.ToList())
+                        {
+                            if (item[0] == target)
+                            {
+                                Queue.Remove(item);
+                                plsgo = true;
+                            }
+                        }
+
+                        if (plsgo)
+                        {
+                            _data.Core.WriteChatMessage("User was removed from queue.", false);
+                            return;
+                        }
+                        else
+                        {
+                            _data.Core.WriteChatMessage("User is not in queue.", false);
+                            return;
+                        }
+                    }
+
+
                     if (parts[1] == "open")
                     {
                         if (isOpen == true)
@@ -161,7 +166,7 @@ namespace QueueCommand
                         else
                         {
                             isOpen = true;
-                            _data.Core.WriteChatMessage("The queue is now open!", false);
+                            _data.Core.WriteChatMessage("The queue is now open! Join with \"!join [name]\".", false);
                             return;
                         }
                     }
@@ -198,8 +203,11 @@ namespace QueueCommand
                 string finaloutput = "Currently waiting: ";
                 foreach (string[] item in Queue.ToList())
                 {
-                    finaloutput += item[0] + " (" + item[2] + "), ";
+                    string response = string.Join(" ", item).Substring(item[0].Length + item[1].Length + 2);
+                    finaloutput += item[0] + " (" + response + "), ";
                 }
+
+                
 
                 finaloutput = finaloutput.Remove(finaloutput.Length - 2);
                 _data.Core.WriteChatMessage(finaloutput, false);
