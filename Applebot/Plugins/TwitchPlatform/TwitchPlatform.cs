@@ -27,6 +27,9 @@ namespace TwitchPlatform
         private string _pass;
         private string _channel;
 
+        private Queue<TimeSpan> _seconds = new Queue<TimeSpan>();
+        private DateTime _startingTime = DateTime.UtcNow;
+
         public TwitchPlatform()
         {
             if (!File.Exists("Settings/twitchsettings.xml"))
@@ -152,6 +155,18 @@ namespace TwitchPlatform
         {
             lock (_streamLock)
             {
+                // TODO: This seems to work just fine but I feel like there is a way to produce a smoother buffer
+                _seconds.Enqueue(DateTime.UtcNow - _startingTime);
+
+                while (_seconds.Count > 15)
+                {
+                    while (_seconds.First() < (DateTime.UtcNow - _startingTime) - TimeSpan.FromSeconds(30))
+                    {
+                        _seconds.Dequeue();
+                    }
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                }
+
                 _writer.WriteLine(data);
                 _writer.Flush();
             }
