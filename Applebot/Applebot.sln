@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22823.1
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{DC626F05-74E0-4934-85BA-42DD1AAFB8AD}"
 EndProject
@@ -34,6 +34,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{5366C50D-7481-4D7F-B76F-B37F327B2EE9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordPlatform", "Plugins\DiscordPlatform\DiscordPlatform.csproj", "{07D35897-1764-4536-B664-933F1A1DD656}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleTextCommand", "Plugins\SimpleTextCommand\SimpleTextCommand.csproj", "{233099A5-68D6-408E-80D8-646F61745437}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -199,6 +201,18 @@ Global
 		{07D35897-1764-4536-B664-933F1A1DD656}.Release|Any CPU.Build.0 = Release|Any CPU
 		{07D35897-1764-4536-B664-933F1A1DD656}.Release|x86.ActiveCfg = Release|Any CPU
 		{07D35897-1764-4536-B664-933F1A1DD656}.Release|x86.Build.0 = Release|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Beta|Any CPU.ActiveCfg = Debug|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Beta|Any CPU.Build.0 = Debug|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Beta|x86.ActiveCfg = Release|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Beta|x86.Build.0 = Release|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Debug|x86.Build.0 = Debug|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Release|Any CPU.Build.0 = Release|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Release|x86.ActiveCfg = Release|Any CPU
+		{233099A5-68D6-408E-80D8-646F61745437}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -216,5 +230,6 @@ Global
 		{32288A9F-98BF-4074-A9D5-F7B3BBF645D7} = {5366C50D-7481-4D7F-B76F-B37F327B2EE9}
 		{5366C50D-7481-4D7F-B76F-B37F327B2EE9} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 		{07D35897-1764-4536-B664-933F1A1DD656} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
+		{233099A5-68D6-408E-80D8-646F61745437} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 	EndGlobalSection
 EndGlobal
