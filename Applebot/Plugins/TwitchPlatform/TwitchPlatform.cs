@@ -64,9 +64,9 @@ namespace TwitchPlatform
                 return;
             }
 
-            _nick = nick.InnerXml;
+            _nick = nick.InnerXml.ToLower();
             _pass = pass.InnerXml;
-            _channel = channel.InnerXml;
+            _channel = channel.InnerXml.ToLower();
         }
 
         public override void Run()
@@ -237,7 +237,7 @@ namespace TwitchPlatform
                     }
             }
 
-            if (sender == _nick)
+            if (sender == _channel)
                 return true;
 
             string[] mods = _tmiPrevious;
