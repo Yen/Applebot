@@ -113,6 +113,10 @@
       <Link>Plugins\PingCommand.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\Plugins\QueueCommand\bin\Debug\QueueCommand.dll">
+      <Link>Plugins\QueueCommand.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\Plugins\SimpleTextCommand\bin\Debug\SimpleTextCommand.dll">
       <Link>Plugins\SimpleTextCommand.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -125,6 +129,10 @@
       <Link>Settings\twitchsettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\Plugins\UptimeCommand\bin\Debug\UptimeCommand.dll">
+      <Link>Plugins\UptimeCommand.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\QueueCommand\bin\Debug\QueueCommand.dll">
       <Link>Commands\QueueCommand.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -135,9 +143,6 @@
     </Content>
     <Content Include="..\UptimeCommand\bin\Debug\UptimeCommand.dll">
       <Link>Commands\UptimeCommand.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Plugins\QueueCommand.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="settings.xml">
