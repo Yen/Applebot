@@ -160,9 +160,9 @@ namespace SimpleTextCommand
         {
             string[] parts = message.Content.Split(' ');
 
-            if (parts[0] == "!text" || parts[0] == "!match")
+            if (parts[0] == "!command" || parts[0] == "!autoreply")
             {
-                bool isComplex = (parts[0] == "!match");
+                bool isComplex = (parts[0] == "!autoreply");
                 string syntaxHelp = parts[0];
                 bool elevated = platform.CheckElevatedStatus(message.Sender);
 
