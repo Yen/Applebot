@@ -28,7 +28,7 @@ namespace TwitchPlatform
 
         private string _nick;
         private string _pass;
-        private string _channel;
+        public string Channel { get; private set; }
 
         private Queue<TimeSpan> _seconds = new Queue<TimeSpan>();
         private DateTime _startingTime = DateTime.UtcNow;
@@ -66,7 +66,7 @@ namespace TwitchPlatform
 
             _nick = nick.InnerXml.ToLower();
             _pass = pass.InnerXml;
-            _channel = channel.InnerXml.ToLower();
+            Channel = channel.InnerXml.ToLower();
         }
 
         public override void Run()
@@ -134,7 +134,7 @@ namespace TwitchPlatform
             SendString(string.Format("PASS {0}", _pass), true);
             SendString(string.Format("NICK {0}", _nick), true);
 
-            SendString(string.Format("JOIN #{0}", _channel), true);
+            SendString(string.Format("JOIN #{0}", Channel), true);
         }
 
         // TODO: This gives elevated a 2:1 priority, obviously it should be 1:0, .NET threading knowledge is required
@@ -147,11 +147,11 @@ namespace TwitchPlatform
             {
                 lock (_sendLock)
                 {
-                    SendString(string.Format("PRIVMSG #{0} :{1}", _channel, data.Content), data.Elevated);
+                    SendString(string.Format("PRIVMSG #{0} :{1}", Channel, data.Content), data.Elevated);
                     return;
                 }
             }
-            SendString(string.Format("PRIVMSG #{0} :{1}", _channel, data.Content), data.Elevated);
+            SendString(string.Format("PRIVMSG #{0} :{1}", Channel, data.Content), data.Elevated);
         }
 
         private void SendString(string data, bool priority)
@@ -198,7 +198,7 @@ namespace TwitchPlatform
                                     XmlDocument doc = new XmlDocument();
                                     using (WebClient client = new WebClient())
                                     {
-                                        byte[] buffer = client.DownloadData("http://tmi.twitch.tv/group/user/" + _channel + "/chatters");
+                                        byte[] buffer = client.DownloadData("http://tmi.twitch.tv/group/user/" + Channel + "/chatters");
                                         XmlDictionaryReader reader = JsonReaderWriterFactory.CreateJsonReader(buffer, XmlDictionaryReaderQuotas.Max);
                                         XElement element = XElement.Load(reader);
 
@@ -237,7 +237,7 @@ namespace TwitchPlatform
                     }
             }
 
-            if (sender == _channel)
+            if (sender == Channel)
                 return true;
 
             string[] mods = _tmiPrevious;
