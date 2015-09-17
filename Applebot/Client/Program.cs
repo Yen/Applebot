@@ -30,37 +30,35 @@ namespace Client
         {
             Console.WriteLine("Applebot");
 
-#if BETA
             ClientNew.Core core = new ClientNew.Core();
 
             core.StartPlatformTasks();
             core.WaitForPlatformTasks();
-#else
-            try
-            {
-                Logger.Log(Logger.Level.LOG, "Loading settings");
-                BotSettings settings = new BotSettings("settings.xml", "usersettings.xml");
 
-                settings["loggingMessages"] = true;
+            //try
+            //{
+            //    Logger.Log(Logger.Level.LOG, "Loading settings");
+            //    BotSettings settings = new BotSettings("settings.xml", "usersettings.xml");
 
-                Logger.Log(Logger.Level.LOG, "Initialising user manager");
-                UserManager manager = new UserManager(settings);
+            //    settings["loggingMessages"] = true;
 
-                Logger.Log(Logger.Level.LOG, "Initialising bot core");
-                BotCore core = new BotCore(settings, manager);
+            //    Logger.Log(Logger.Level.LOG, "Initialising user manager");
+            //    UserManager manager = new UserManager(settings);
 
-                Logger.Log(Logger.Level.LOG, "Initialising input handler");
-                InputHandler input = new InputHandler(core, settings);
-                new Thread(input.Run).Start();
+            //    Logger.Log(Logger.Level.LOG, "Initialising bot core");
+            //    BotCore core = new BotCore(settings, manager);
 
-                Logger.Log(Logger.Level.LOG, "Running bot core loop");
-                core.Run();
-            }
-            catch (ManualException e)
-            {
-                Logger.Log(Logger.Level.EXCEPTION, "Program was excaped due to manual exception being thrown ({0})", e.Message);
-            }
-#endif
+            //    Logger.Log(Logger.Level.LOG, "Initialising input handler");
+            //    InputHandler input = new InputHandler(core, settings);
+            //    new Thread(input.Run).Start();
+
+            //    Logger.Log(Logger.Level.LOG, "Running bot core loop");
+            //    core.Run();
+            //}
+            //catch (ManualException e)
+            //{
+            //    Logger.Log(Logger.Level.EXCEPTION, "Program was excaped due to manual exception being thrown ({0})", e.Message);
+            //}
 
             Console.WriteLine("Program ended");
             Console.ReadKey();
