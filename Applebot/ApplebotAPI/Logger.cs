@@ -28,6 +28,7 @@ namespace ApplebotAPI
             public static readonly Level WARNING = new Level("Warning", ConsoleColor.Yellow);
             public static readonly Level APPLICATION = new Level("App", ConsoleColor.Magenta);
             public static readonly Level PLATFORM = new Level("Platform", ConsoleColor.DarkGreen);
+            public static readonly Level DEBUG = new Level("Debug", ConsoleColor.DarkRed);
         }
 
         /// <summary>

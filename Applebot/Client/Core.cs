@@ -19,6 +19,9 @@ namespace ClientNew
 
         public Core()
         {
+            AssemblyName api = Assembly.GetExecutingAssembly().GetReferencedAssemblies().FirstOrDefault(x => x.Name == "ApplebotAPI");
+            Logger.Log(Logger.Level.APPLICATION, "Using ApplebotAPI version ({0})", api.Version);
+
             ReloadPlugins();
         }
 
