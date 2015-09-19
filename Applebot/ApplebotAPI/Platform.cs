@@ -72,13 +72,12 @@ namespace ApplebotAPI
         }
 
         /// <summary>
-        /// Checks whether a sender has elevated status to this backend
+        /// Checks whether a messages sender has elevated status to this backend
         /// </summary>
-        /// <param name="sender">The sender that is being queried, this can be null if the command has
-        /// no specific sender entity</param>
+        /// <param name="message">The message that was sent as an argument to the command</param>
         /// <returns>This method returns false by default and should return false if there is no
         /// specific elevated users on this backend</returns>
-        public virtual bool CheckElevatedStatus(string sender)
+        public virtual bool CheckElevatedStatus(Message message)
         {
             return false;
         }

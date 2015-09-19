@@ -180,7 +180,7 @@ namespace TwitchPlatform
         private DateTime _tmiLastUpdate;
         private Task _tmiUpdateTask;
 
-        public override bool CheckElevatedStatus(string sender)
+        public override bool CheckElevatedStatus(Message message)
         {
             lock (_tmiLock)
             {
@@ -237,7 +237,7 @@ namespace TwitchPlatform
                     }
             }
 
-            if (sender == Channel)
+            if (message.Sender == Channel)
                 return true;
 
             string[] mods = _tmiPrevious;
@@ -245,7 +245,7 @@ namespace TwitchPlatform
             if (mods == null)
                 return false;
 
-            if (mods.Contains(sender))
+            if (mods.Contains(message.Sender))
                 return true;
 
             return false;

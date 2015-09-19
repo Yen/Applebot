@@ -164,7 +164,7 @@ namespace SimpleTextCommand
             {
                 bool isComplex = (parts[0] == "!autoreply");
                 string syntaxHelp = parts[0];
-                bool elevated = platform.CheckElevatedStatus(message.Sender);
+                bool elevated = platform.CheckElevatedStatus(message);
 
                 if (!elevated)
                 {

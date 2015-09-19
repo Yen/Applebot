@@ -1,10 +1,12 @@
 ﻿using ApplebotAPI;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
@@ -31,9 +33,54 @@ namespace DiscordPlatform
     public class DiscordPlatform : Platform
     {
 
+        private const long BitwiseElevatedPermission = 1 << 13;
+
+        public class Role
+        {
+            public string ID;
+            public string Name;
+            public long Permissions;
+        }
+
+        public class Member
+        {
+            public string User;
+            public string ID;
+            public List<string> RoleIDs = new List<string>();
+        }
+
+        public class Channel
+        {
+            public class PermissionOverwrites
+            {
+                public string Type;
+                public string ID;
+                public int Allow;
+                public int Deny;
+            }
+
+            public string ID;
+            public string Name;
+            public string Type;
+            public int Position;
+            public List<PermissionOverwrites> Overwrites = new List<PermissionOverwrites>();
+        }
+
+        public class Guild
+        {
+            public string OwnerID;
+            public string ID;
+            public string Name;
+            public List<Role> Roles = new List<Role>();
+            public List<Member> Members = new List<Member>();
+            public List<Channel> Channels = new List<Channel>();
+        }
+
         ClientWebSocket _socket;
         NameValueCollection _loginData;
         string _token;
+
+        List<Guild> _guilds = new List<Guild>();
 
         public DiscordPlatform()
         {
@@ -201,6 +248,63 @@ namespace DiscordPlatform
                                     Thread.Sleep(int.Parse(data["d"]["heartbeat_interval"].ToString()) - 5000);
                                 }
                             });
+
+                            foreach (var guild_ in data["d"]["guilds"])
+                            {
+                                Guild guild = new Guild();
+                                guild.Name = guild_["name"].ToString();
+                                guild.OwnerID = guild_["owner_id"].ToString();
+                                guild.ID = guild_["id"].ToString();
+
+                                foreach (var role_ in guild_["roles"])
+                                {
+                                    Role role = new Role();
+                                    role.Permissions = long.Parse(role_["permissions"].ToString());
+                                    role.Name = role_["name"].ToString();
+                                    role.ID = role_["id"].ToString();
+
+                                    guild.Roles.Add(role);
+                                }
+
+                                foreach (var member_ in guild_["members"])
+                                {
+                                    Member member = new Member();
+                                    member.User = member_["user"]["username"].ToString();
+                                    member.ID = member_["user"]["id"].ToString();
+
+                                    foreach (var role_ in member_["roles"])
+                                    {
+                                        member.RoleIDs.Add(role_.ToString());
+                                    }
+
+                                    guild.Members.Add(member);
+                                }
+
+                                foreach (var channel_ in guild_["channels"])
+                                {
+                                    Channel channel = new Channel();
+                                    channel.Type = channel_["type"].ToString();
+                                    channel.Position = int.Parse(channel_["position"].ToString());
+                                    channel.Name = channel_["name"].ToString();
+                                    channel.ID = channel_["id"].ToString();
+
+                                    foreach (var overwrite_ in channel_["permission_overwrites"])
+                                    {
+                                        var overwrite = new Channel.PermissionOverwrites();
+                                        overwrite.Type = overwrite_["type"].ToString();
+                                        overwrite.ID = overwrite_["id"].ToString();
+                                        overwrite.Deny = int.Parse(overwrite_["deny"].ToString());
+                                        overwrite.Allow = int.Parse(overwrite_["allow"].ToString());
+
+                                        channel.Overwrites.Add(overwrite);
+                                    }
+
+                                    guild.Channels.Add(channel);
+                                }
+
+                                _guilds.Add(guild);
+                            }
+
                             break;
                         }
                     case "MESSAGE_CREATE":
@@ -210,7 +314,106 @@ namespace DiscordPlatform
                             string userID = data["d"]["author"]["id"].ToString();
                             string channelID = data["d"]["channel_id"].ToString();
                             string id = data["d"]["id"].ToString();
+
                             ProcessMessage(this, new DiscordMessage(user, content, userID, channelID, id));
+                            break;
+                        }
+                    case "GUILD_MEMBER_UPDATE":
+                        {
+                            var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+
+                            if (guilds.Count() == 1)
+                            {
+                                var members = guilds.First().Members.Where(a => a.ID == data["d"]["user"]["id"].ToString());
+
+                                if (members.Count() == 1)
+                                {
+                                    members.First().RoleIDs.Clear();
+                                    foreach (var role in data["d"]["roles"])
+                                    {
+                                        members.First().RoleIDs.Add(role.ToString());
+                                    }
+                                }
+                            }
+
+                            break;
+                        }
+                    case "GUILD_ROLE_UPDATE":
+                        {
+                            var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+
+                            if (guilds.Count() == 1)
+                            {
+                                var roles = guilds.First().Roles.Where(a => a.ID == data["d"]["role"]["id"].ToString());
+
+                                if (roles.Count() == 1)
+                                {
+                                    roles.First().Permissions = long.Parse(data["d"]["role"]["permissions"].ToString());
+                                    roles.First().Name = data["d"]["role"]["name"].ToString();
+                                }
+                            }
+
+                            break;
+                        }
+                    case "GUILD_ROLE_DELETE":
+                        {
+                            var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+
+                            if (guilds.Count() == 1)
+                            {
+                                var roles = guilds.First().Roles.Where(a => a.ID == data["d"]["role_id"].ToString());
+
+                                if (roles.Count() == 1)
+                                {
+                                    guilds.First().Roles.Remove(roles.First());
+                                }
+                            }
+
+                            break;
+                        }
+                    case "GUILD_ROLE_CREATE":
+                        {
+                            var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+
+                            if (guilds.Count() == 1)
+                            {
+                                Role role = new Role();
+                                role.Permissions = long.Parse(data["d"]["role"]["permissions"].ToString());
+                                role.Name = data["d"]["role"]["name"].ToString();
+                                role.ID = data["d"]["role"]["id"].ToString();
+
+                                guilds.First().Roles.Add(role);
+                            }
+
+                            break;
+                        }
+                    case "PRESENCE_UPDATE":
+                        {
+                            var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+
+                            if (guilds.Count() == 1)
+                            {
+                                var members = guilds.First().Members.Where(a => a.ID == data["d"]["user"]["id"].ToString());
+
+                                if (members.Count() == 0)
+                                {
+                                    Member member = new Member();
+                                    member.ID = data["d"]["user"]["id"].ToString();
+                                    member.User = data["d"]["user"]["username"].ToString();
+
+                                    guilds.First().Members.Add(member);
+                                }
+                                else if (members.Count() == 1)
+                                {
+                                    members.First().User = data["d"]["user"]["username"].ToString();
+                                }
+                            }
+
+                            break;
+                        }
+                    default:
+                        {
+                            Logger.Log(Logger.Level.WARNING, $"Unknown type {value}");
                             break;
                         }
                 }
@@ -244,7 +447,70 @@ namespace DiscordPlatform
             requestWriter.Flush();
             requestWriter.Close();
 
-            var response = request.GetResponse();
+            bool attempting = true;
+            while (attempting)
+            {
+                try
+                {
+                    request.GetResponse().Close();
+                    attempting = false;
+                }
+                catch
+                {
+                    Logger.Log(Logger.Level.WARNING, "Error sending message to Discord server, retrying");
+                }
+            }
+        }
+
+        public override bool CheckElevatedStatus(Message message)
+        {
+            if (!(message is DiscordMessage))
+            {
+                Logger.Log(Logger.Level.ERROR, "Discord platform recieved a Message derived class that of DiscordMessage in check elevated status");
+                return false;
+            }
+
+            var userID = (message as DiscordMessage).UserID;
+            var channelID = (message as DiscordMessage).ChannelID;
+
+            var guild = _guilds.Where(a => a.Channels.Any(b => b.ID == channelID));
+
+            if (guild.Count() != 1)
+                return false;
+
+            if (guild.First().OwnerID == userID)
+            {
+                return true;
+            }
+
+            var member = guild.First().Members.Where(a => a.ID == userID);
+
+            if (member.Count() != 1)
+                return false;
+
+            List<Role> roles = new List<Role>();
+
+            foreach (var role in guild.First().Roles)
+            {
+                foreach (var roleID in member.First().RoleIDs)
+                {
+                    if (roleID == role.ID)
+                    {
+                        roles.Add(role);
+                    }
+                }
+            }
+
+            if (roles.Count == 0)
+                return false;
+
+            foreach (var role in roles)
+            {
+                if ((role.Permissions & BitwiseElevatedPermission) == BitwiseElevatedPermission)
+                    return true;
+            }
+
+            return false;
         }
 
     }

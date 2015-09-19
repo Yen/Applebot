@@ -33,7 +33,7 @@ namespace ClientNew
                 Dictionary<Type, DateTime> platformOverflows = _platforms.Find(x => x.Item1 == sender as Platform).Item2;
                 foreach (Command command in commands)
                 {
-                    if (!(sender as Platform).CheckElevatedStatus(message.Sender))
+                    if (!(sender as Platform).CheckElevatedStatus(message))
                         if (platformOverflows.ContainsKey(command.GetType()) && !(platformOverflows[command.GetType()] < DateTime.UtcNow - command.Overflow))
                             continue;
 

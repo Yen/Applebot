@@ -29,7 +29,7 @@ namespace QueueCommand
         {
             string[] parts = message.Content.Split(' ');
             string username = message.Sender;
-            bool asOwner = platform.CheckElevatedStatus(message.Sender);
+            bool asOwner = platform.CheckElevatedStatus(message);
 
             if (parts[0] == "!next")
                 if (asOwner)
