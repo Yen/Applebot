@@ -77,10 +77,12 @@ namespace DiscordPlatform
         }
 
         ClientWebSocket _socket;
+        object _socketLock = new object();
         NameValueCollection _loginData;
         string _token;
+        bool _shouldReconnect = false;
 
-        List<Guild> _guilds = new List<Guild>();
+        SynchronizedCollection<Guild> _guilds = new SynchronizedCollection<Guild>();
 
         public DiscordPlatform()
         {
@@ -194,10 +196,15 @@ namespace DiscordPlatform
             }
         }
 
-        public override void Run()
+        private void Reconnect()
         {
             _token = GetLoginToken();
 
+            if (_socket != null && _socket.State != WebSocketState.Closed)
+            {
+                _socket.CloseAsync(WebSocketCloseStatus.Empty, "Reconnecting", CancellationToken.None);
+                _socket.Dispose();
+            }
             _socket = new ClientWebSocket();
 
             Logger.Log(Logger.Level.PLATFORM, "Attempting connection to Discord websocket hub server");
@@ -207,9 +214,29 @@ namespace DiscordPlatform
             string connectionData = CreateConnectionData(_token);
 
             SendString(connectionData);
+        }
+
+        public override void Run()
+        {
+            lock (_socketLock)
+            {
+                Reconnect();
+            }
 
             while (true)
             {
+                //TODO: some async event for cleaner synchronisation among threads
+                if (_shouldReconnect)
+                {
+                    lock (_socketLock)
+                    {
+                        Logger.Log(Logger.Level.PLATFORM, "Attempting to reconnect to Discord platform");
+                        Reconnect();
+                        _guilds.Clear();
+                    }
+                    _shouldReconnect = false;
+                }
+
                 JObject data = RecieveDiscord();
 
                 if (data == null)
@@ -422,8 +449,11 @@ namespace DiscordPlatform
 
         private Task SendString(string data)
         {
-            ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(data));
-            return _socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            lock (_socketLock)
+            {
+                ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(data));
+                return _socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            }
         }
 
         public override void Send<T1>(T1 data)
@@ -439,17 +469,18 @@ namespace DiscordPlatform
 
             HttpWebRequest request = WebRequest.CreateHttp(string.Format(@"https://discordapp.com/api/channels/{0}/messages", (data.Origin as DiscordMessage).ChannelID));
             request.Method = "POST";
-            request.Headers.Add("authorization", _token);
             request.ContentType = "application/json";
-
             StreamWriter requestWriter = new StreamWriter(request.GetRequestStream());
             requestWriter.Write(content.ToString());
             requestWriter.Flush();
             requestWriter.Close();
 
+            int attempts = 0;
             bool attempting = true;
             while (attempting)
             {
+                request.Headers.Add("authorization", _token);
+
                 try
                 {
                     request.GetResponse().Close();
@@ -457,7 +488,18 @@ namespace DiscordPlatform
                 }
                 catch
                 {
-                    Logger.Log(Logger.Level.WARNING, "Error sending message to Discord server, retrying");
+                    Logger.Log(Logger.Level.WARNING, $"Error sending message to Discord server, retrying ({attempts++})");
+
+                    if (attempts > 5)
+                    {
+                        Logger.Log(Logger.Level.ERROR, "Discord platforms seems to have been disconnected, requesting reconnect");
+                        _shouldReconnect = true;
+                        attempts = 0;
+                        while (_shouldReconnect)
+                        {
+                            Thread.Sleep(1000); //TODO: stupid looping
+                        }
+                    }
                 }
             }
         }
