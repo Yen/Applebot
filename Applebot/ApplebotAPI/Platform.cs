@@ -99,12 +99,15 @@ namespace ApplebotAPI
         /// </summary>
         public bool Elevated { get; private set; }
 
+        public Message Origin { get; private set; }
+
         /// <param name="content">A string that represets the data to be sent</param>
         /// <param name="elevated">If the data should have elevated status when being sent</param>
-        public SendData(string content, bool elevated)
+        public SendData(string content, bool elevated, Message origin)
         {
             Content = content;
             Elevated = elevated;
+            Origin = origin;
         }
     }
 }

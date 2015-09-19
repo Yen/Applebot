@@ -174,7 +174,7 @@ namespace SimpleTextCommand
 
                 if (parts.Length < 2)
                 {
-                    platform.Send(new SendData("Missing parameters. :v", false));
+                    platform.Send(new SendData("Missing parameters. :v", false, message));
                     return;
                 }
 
@@ -184,7 +184,7 @@ namespace SimpleTextCommand
                 {
                     if (parts.Length < 3)
                     {
-                        platform.Send(new SendData(String.Format("Syntax: {0} remove [command]", syntaxHelp), false));
+                        platform.Send(new SendData(string.Format("Syntax: {0} remove [command]", syntaxHelp), false, message));
                         return;
                     }
 
@@ -192,11 +192,11 @@ namespace SimpleTextCommand
 
                     if (replaced)
                     {
-                        platform.Send(new SendData("Removed pattern " + parts[2] + ".", false));
+                        platform.Send(new SendData("Removed pattern " + parts[2] + ".", false, message));
                     }
                     else
                     {
-                        platform.Send(new SendData("Pattern " + parts[2] + " doesn't exist. :v", false));
+                        platform.Send(new SendData("Pattern " + parts[2] + " doesn't exist. :v", false, message));
                     }
 
                     return;
@@ -207,7 +207,7 @@ namespace SimpleTextCommand
                 {
                     if (parts.Length < 4)
                     {
-                        platform.Send(new SendData(String.Format("Syntax: {0} add [command] [response]", syntaxHelp), false));
+                        platform.Send(new SendData(string.Format("Syntax: {0} add [command] [response]", syntaxHelp), false, message));
                         return;
                     }
 
@@ -219,17 +219,17 @@ namespace SimpleTextCommand
 
                         if (replaced)
                         {
-                            platform.Send(new SendData("Replaced pattern " + parts[2] + ".", false));
+                            platform.Send(new SendData("Replaced pattern " + parts[2] + ".", false, message));
                         }
                         else
                         {
-                            platform.Send(new SendData("Added pattern " + parts[2] + ".", false));
+                            platform.Send(new SendData("Added pattern " + parts[2] + ".", false, message));
                         }
 
                     }
                     catch
                     {
-                        platform.Send(new SendData("Invalid regex?", false));
+                        platform.Send(new SendData("Invalid regex?", false, message));
                         return;
                     }
 
@@ -251,7 +251,7 @@ namespace SimpleTextCommand
                         Regex r = new Regex(trigger);
                         if (r.IsMatch(message.Content))
                         {
-                            platform.Send(new SendData(node.Attributes["response"].Value, false));
+                            platform.Send(new SendData(node.Attributes["response"].Value, false, message));
                         }
                     }
 
@@ -259,7 +259,7 @@ namespace SimpleTextCommand
                     {
                         if (trigger == message.Content.Substring(1))
                         {
-                            platform.Send(new SendData(node.Attributes["response"].Value, false));
+                            platform.Send(new SendData(node.Attributes["response"].Value, false, message));
                         }
                     }
 

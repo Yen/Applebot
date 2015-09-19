@@ -13,7 +13,6 @@ using System.Xml.Linq;
 namespace UptimeCommand
 {
     [PlatformRegistrar(typeof(TwitchPlatform.TwitchPlatform))]
-
     public class UptimeCommand : Command
     {
 
@@ -45,7 +44,7 @@ namespace UptimeCommand
             if (bufferNode == null)
             {
                 Logger.Log(Logger.Level.WARNING, "API returned null stream node (stream offline?)");
-                platform.Send(new SendData("Error retrieving stream info. :v", false));
+                platform.Send(new SendData("Error retrieving stream info. :v", false, message));
                 return;
             }
 
@@ -61,7 +60,7 @@ namespace UptimeCommand
             string seconds = Math.Floor(numMinutes % 60).ToString();
 
             string output = String.Format("Live for {0} {1}, {2} {3}.", hours, hours == "1" ? "hour" : "hours", minutes, minutes == "1" ? "minute" : "minutes");
-            platform.Send(new SendData(output, false));
+            platform.Send(new SendData(output, false, message));
         }
     }
 }

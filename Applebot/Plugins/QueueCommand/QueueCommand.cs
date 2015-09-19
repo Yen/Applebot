@@ -36,18 +36,18 @@ namespace QueueCommand
                 {
                     if (Queue.Count == 0)
                     {
-                        platform.Send(new SendData("No one is in queue.", false));
+                        platform.Send(new SendData("No one is in queue.", false, message));
                         return;
                     }
 
                     string[] next = Queue[0];
                     Queue.RemoveAt(0);
-                    platform.Send(new SendData("You're up, " + next[0] + " (" + next[2] + ")! Please join the room.", false));
+                    platform.Send(new SendData("You're up, " + next[0] + " (" + next[2] + ")! Please join the room.", false, message));
                     return;
                 }
                 else
                 {
-                    platform.Send(new SendData("The next waiting player is " + Queue.First()[0] + " (" + Queue.First()[2] + ").", false));
+                    platform.Send(new SendData("The next waiting player is " + Queue.First()[0] + " (" + Queue.First()[2] + ").", false, message));
                     return;
                 }
 
@@ -55,12 +55,12 @@ namespace QueueCommand
             {
                 if (isOpen == false)
                 {
-                    platform.Send(new SendData("The queue is closed. Please wait for the broadcaster to open it!", false));
+                    platform.Send(new SendData("The queue is closed. Please wait for the broadcaster to open it!", false, message));
                     return;
                 }
                 if (parts.Length == 1)
                 {
-                    platform.Send(new SendData("Please specify an in-game name to join, like this: '!join QueenOfNasods'", false));
+                    platform.Send(new SendData("Please specify an in-game name to join, like this: '!join QueenOfNasods'", false, message));
                     return;
                 }
                 else
@@ -76,7 +76,7 @@ namespace QueueCommand
                     }
                     if (duplicate)
                     {
-                        platform.Send(new SendData("You're already in the queue.", false));
+                        platform.Send(new SendData("You're already in the queue.", false, message));
                         return;
                     }
 
@@ -84,7 +84,7 @@ namespace QueueCommand
 
                     string[] temp = { username };
                     Queue.Add(temp.Concat(parts).ToArray());
-                    platform.Send(new SendData("Added " + username + " to queue as " + response + ". You are at position " + Queue.Count() + ".", false));
+                    platform.Send(new SendData("Added " + username + " to queue as " + response + ". You are at position " + Queue.Count() + ".", false, message));
                     return;
                 }
             }
@@ -95,7 +95,7 @@ namespace QueueCommand
 
                 if (Queue.Count == 0)
                 {
-                    platform.Send(new SendData("You're not in the queue.", false));
+                    platform.Send(new SendData("You're not in the queue.", false, message));
                     return;
                 }
 
@@ -111,12 +111,12 @@ namespace QueueCommand
                 }
                 if (peaceout)
                 {
-                    platform.Send(new SendData("You've been removed from the queue.", false));
+                    platform.Send(new SendData("You've been removed from the queue.", false, message));
                     return;
                 }
                 else
                 {
-                    platform.Send(new SendData("You're not in the queue.", false));
+                    platform.Send(new SendData("You're not in the queue.", false, message));
                     return;
                 }
             }
@@ -142,12 +142,12 @@ namespace QueueCommand
 
                         if (plsgo)
                         {
-                            platform.Send(new SendData("User was removed from queue.", false));
+                            platform.Send(new SendData("User was removed from queue.", false, message));
                             return;
                         }
                         else
                         {
-                            platform.Send(new SendData("User is not in queue.", false));
+                            platform.Send(new SendData("User is not in queue.", false, message));
                             return;
                         }
                     }
@@ -157,13 +157,13 @@ namespace QueueCommand
                     {
                         if (isOpen == true)
                         {
-                            platform.Send(new SendData("The queue is already open.", false));
+                            platform.Send(new SendData("The queue is already open.", false, message));
                             return;
                         }
                         else
                         {
                             isOpen = true;
-                            platform.Send(new SendData("The queue is now open! Join with \"!join [name]\".", false));
+                            platform.Send(new SendData("The queue is now open! Join with \"!join [name]\".", false, message));
                             return;
                         }
                     }
@@ -171,20 +171,20 @@ namespace QueueCommand
                     {
                         if (isOpen == false)
                         {
-                            platform.Send(new SendData("The queue is already closed.", false));
+                            platform.Send(new SendData("The queue is already closed.", false, message));
                             return;
                         }
                         else
                         {
                             isOpen = true;
-                            platform.Send(new SendData("The queue is now closed.", false));
+                            platform.Send(new SendData("The queue is now closed.", false, message));
                             return;
                         }
                     }
                     if (parts[1] == "clear")
                     {
                         Queue.Clear();
-                        platform.Send(new SendData("Queue cleared. All players have been removed.", false));
+                        platform.Send(new SendData("Queue cleared. All players have been removed.", false, message));
                         return;
                     }
                 }
@@ -192,7 +192,7 @@ namespace QueueCommand
 
                 if (Queue.Count == 0)
                 {
-                    platform.Send(new SendData("No one is in queue.", false));
+                    platform.Send(new SendData("No one is in queue.", false, message));
                     return;
                 }
 
@@ -207,7 +207,7 @@ namespace QueueCommand
 
 
                 finaloutput = finaloutput.Remove(finaloutput.Length - 2);
-                platform.Send(new SendData(finaloutput, false));
+                platform.Send(new SendData(finaloutput, false, message));
                 return;
             }
 

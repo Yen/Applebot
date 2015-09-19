@@ -17,7 +17,7 @@ namespace PingCommand
 
         public override void HandleMessage<T1, T2>(T1 message, T2 platform)
         {
-            platform.Send(new SendData(string.Format("Pong! {0} ({1})", DateTime.Now.ToString(), TimeZoneInfo.Local.DisplayName), false));
+            platform.Send(new SendData(string.Format("Pong! {0} ({1})", DateTime.Now.ToString(), TimeZoneInfo.Local.DisplayName), false, message));
         }
     }
 }

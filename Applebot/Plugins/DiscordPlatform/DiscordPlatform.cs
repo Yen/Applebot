@@ -14,11 +14,26 @@ using System.Xml;
 
 namespace DiscordPlatform
 {
+    public class DiscordMessage : Message
+    {
+        public string UserID { get; private set; }
+        public string ChannelID { get; private set; }
+        public string ID { get; private set; }
+
+        public DiscordMessage(string sender, string content, string userID, string channelID, string id) : base(sender, content)
+        {
+            UserID = userID;
+            ChannelID = channelID;
+            ID = id;
+        }
+    }
+
     public class DiscordPlatform : Platform
     {
 
         ClientWebSocket _socket;
         NameValueCollection _loginData;
+        string _token;
 
         public DiscordPlatform()
         {
@@ -134,7 +149,7 @@ namespace DiscordPlatform
 
         public override void Run()
         {
-            string token = GetLoginToken();
+            _token = GetLoginToken();
 
             _socket = new ClientWebSocket();
 
@@ -142,9 +157,9 @@ namespace DiscordPlatform
 
             _socket.ConnectAsync(new Uri("wss://discordapp.com/hub"), CancellationToken.None).Wait();
 
-            string connectionData = CreateConnectionData(token);
+            string connectionData = CreateConnectionData(_token);
 
-            SendData(connectionData);
+            SendString(connectionData);
 
             while (true)
             {
@@ -162,7 +177,6 @@ namespace DiscordPlatform
                     Logger.Log(Logger.Level.WARNING, "Packet recieved from Discord does not contain a defined type");
                     continue;
                 }
-
 
                 string value = type.ToString();
                 switch (value)
@@ -182,25 +196,28 @@ namespace DiscordPlatform
                                     datePacket.Add("op", 1);
                                     datePacket.Add("d", date);
 
-                                    SendData(datePacket.ToString());
-
-                                    Logger.Log(Logger.Level.DEBUG, "Sending stayalive packet");
+                                    SendString(datePacket.ToString());
 
                                     Thread.Sleep(int.Parse(data["d"]["heartbeat_interval"].ToString()) - 5000);
                                 }
                             });
                             break;
                         }
-                    default:
+                    case "MESSAGE_CREATE":
                         {
-                            Logger.Log(Logger.Level.WARNING, "Discord platform recieved unknown message type \"{0}\"", value);
+                            string user = data["d"]["author"]["username"].ToString();
+                            string content = data["d"]["content"].ToString();
+                            string userID = data["d"]["author"]["id"].ToString();
+                            string channelID = data["d"]["channel_id"].ToString();
+                            string id = data["d"]["id"].ToString();
+                            ProcessMessage(this, new DiscordMessage(user, content, userID, channelID, id));
                             break;
                         }
                 }
             }
         }
 
-        private Task SendData(string data)
+        private Task SendString(string data)
         {
             ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(data));
             return _socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
@@ -208,7 +225,27 @@ namespace DiscordPlatform
 
         public override void Send<T1>(T1 data)
         {
+            if (!(data.Origin is DiscordMessage))
+            {
+                Logger.Log(Logger.Level.ERROR, "Discord platform recieved a SendData derived class whose origin is not that of DiscordMessage, send request is being ignored");
+                return;
+            }
 
+            JObject content = new JObject();
+            content.Add("content", data.Content);
+
+            HttpWebRequest request = WebRequest.CreateHttp(string.Format(@"https://discordapp.com/api/channels/{0}/messages", (data.Origin as DiscordMessage).ChannelID));
+            request.Method = "POST";
+            request.Headers.Add("authorization", _token);
+            request.ContentType = "application/json";
+
+            StreamWriter requestWriter = new StreamWriter(request.GetRequestStream());
+            requestWriter.Write(content.ToString());
+            requestWriter.Flush();
+            requestWriter.Close();
+
+            var response = request.GetResponse();
         }
+
     }
 }
