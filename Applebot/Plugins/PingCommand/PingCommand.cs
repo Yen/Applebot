@@ -17,7 +17,7 @@ namespace PingCommand
 
         public override void HandleMessage<T1, T2>(T1 message, T2 platform)
         {
-            platform.Send(new SendData(string.Format("Pong! {0} ({1}) {2}", DateTime.Now.ToString(), TimeZoneInfo.Local.DisplayName, platform.CheckElevatedStatus(message)), false, message));
+            platform.Send(new SendData(string.Format("Pong! {0} ({1}) {2}", DateTime.Now.ToString(), TimeZoneInfo.Local.DisplayName, platform.CheckElevatedStatus(message) ? "- Elevated" : ""), false, message));
         }
     }
 }
