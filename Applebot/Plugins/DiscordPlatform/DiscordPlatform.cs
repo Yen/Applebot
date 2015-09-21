@@ -170,47 +170,49 @@ namespace DiscordPlatform
 
         private JObject RecieveDiscord()
         {
-            lock (_connectionLock)
+
+            List<byte> recieved = new List<byte>();
+            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
+
+            bool completed = false;
+            while (!completed)
             {
-                List<byte> recieved = new List<byte>();
-                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
-
-                bool completed = false;
-                while (!completed)
+                try
                 {
-                    try
+                    WebSocketReceiveResult result = null;
+                    lock (_connectionLock)
                     {
-                        var result = _socket.ReceiveAsync(buffer, CancellationToken.None).Result;
-
-                        if (result.Count == 0)
-                        {
-                            Reconnect();
-                            return RecieveDiscord();
-                        }
-
-
-                        recieved.AddRange(buffer.Take(result.Count));
-
-                        if (result.EndOfMessage)
-                            completed = true;
+                        result = _socket.ReceiveAsync(buffer, CancellationToken.None).Result;
                     }
-                    catch
+
+                    if ((result == null) || (result.Count == 0))
                     {
                         Reconnect();
                         return RecieveDiscord();
                     }
-                }
 
-                string decoded = Encoding.UTF8.GetString(recieved.ToArray());
 
-                try
-                {
-                    return JObject.Parse(decoded);
+                    recieved.AddRange(buffer.Take(result.Count));
+
+                    if (result.EndOfMessage)
+                        completed = true;
                 }
                 catch
                 {
-                    return null;
+                    Reconnect();
+                    return RecieveDiscord();
                 }
+            }
+
+            string decoded = Encoding.UTF8.GetString(recieved.ToArray());
+
+            try
+            {
+                return JObject.Parse(decoded);
+            }
+            catch
+            {
+                return null;
             }
         }
 
@@ -226,7 +228,6 @@ namespace DiscordPlatform
                 {
                     if (_socket.State != WebSocketState.Closed)
                         _socket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
-                    _socket.Dispose();
                 }
                 _socket = new ClientWebSocket();
                 _socket.Options.KeepAliveInterval = TimeSpan.Zero;
@@ -234,11 +235,11 @@ namespace DiscordPlatform
                 Logger.Log(Logger.Level.PLATFORM, "Attempting connection to Discord websocket hub server");
 
                 _socket.ConnectAsync(new Uri("wss://discordapp.com/hub"), CancellationToken.None).Wait();
-
-                string connectionData = CreateConnectionData(_token);
-
-                SendString(connectionData);
             }
+
+            string connectionData = CreateConnectionData(_token);
+
+            SendString(connectionData);
         }
 
         private JToken GetJsonObject(JToken data, params string[] args)
@@ -493,8 +494,11 @@ namespace DiscordPlatform
         {
             try
             {
-                ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(data));
-                return _socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                lock (_connectionLock)
+                {
+                    ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(data));
+                    return _socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                }
             }
             catch
             {
@@ -529,6 +533,7 @@ namespace DiscordPlatform
             }
             catch
             {
+                Logger.Log(Logger.Level.ERROR, "Error sending message to Discord");
                 Reconnect();
                 Send(data);
             }
