@@ -77,10 +77,9 @@ namespace DiscordPlatform
         }
 
         ClientWebSocket _socket;
-        object _socketLock = new object();
         NameValueCollection _loginData;
         string _token;
-        bool _shouldReconnect = false;
+        object _connectionLock = new object();
 
         SynchronizedCollection<Guild> _guilds = new SynchronizedCollection<Guild>();
 
@@ -170,73 +169,275 @@ namespace DiscordPlatform
 
         private JObject RecieveDiscord()
         {
-            List<byte> recieved = new List<byte>();
-            ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
-
-            bool completed = false;
-            while (!completed)
+            lock(_connectionLock)
             {
-                var result = _socket.ReceiveAsync(buffer, CancellationToken.None).Result;
+                List<byte> recieved = new List<byte>();
+                ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
 
-                recieved.AddRange(buffer.Take(result.Count));
+                bool completed = false;
+                while (!completed)
+                {
+                    var result = _socket.ReceiveAsync(buffer, CancellationToken.None).Result;
 
-                if (result.EndOfMessage)
-                    completed = true;
-            }
+                    recieved.AddRange(buffer.Take(result.Count));
 
-            string decoded = Encoding.UTF8.GetString(recieved.ToArray());
+                    if (result.EndOfMessage)
+                        completed = true;
+                }
 
-            try
-            {
-                return JObject.Parse(decoded);
-            }
-            catch
-            {
-                return null;
+                string decoded = Encoding.UTF8.GetString(recieved.ToArray());
+
+                try
+                {
+                    return JObject.Parse(decoded);
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
         private void Reconnect()
         {
-            _token = GetLoginToken();
-
-            if (_socket != null && _socket.State != WebSocketState.Closed)
+            lock (_connectionLock)
             {
-                _socket.CloseAsync(WebSocketCloseStatus.Empty, "Reconnecting", CancellationToken.None);
-                _socket.Dispose();
+                _token = GetLoginToken();
+
+                if (_socket != null)
+                {
+                    if (_socket.State != WebSocketState.Closed)
+                        _socket.CloseAsync(WebSocketCloseStatus.Empty, "Reconnecting", CancellationToken.None);
+                    _socket.Dispose();
+                }
+                _socket = new ClientWebSocket();
+
+                Logger.Log(Logger.Level.PLATFORM, "Attempting connection to Discord websocket hub server");
+
+                _socket.ConnectAsync(new Uri("wss://discordapp.com/hub"), CancellationToken.None).Wait();
+
+                string connectionData = CreateConnectionData(_token);
+
+                SendString(connectionData);
             }
-            _socket = new ClientWebSocket();
+        }
 
-            Logger.Log(Logger.Level.PLATFORM, "Attempting connection to Discord websocket hub server");
+        private JToken GetJsonObject(JToken data, params string[] args)
+        {
+            JToken result = data;
+            foreach (var arg in args)
+            {
+                result = result[arg];
+                if (result == null)
+                    return null;
+            }
+            return result;
+        }
 
-            _socket.ConnectAsync(new Uri("wss://discordapp.com/hub"), CancellationToken.None).Wait();
+        private void HandlePacket(JToken data)
+        {
+            var type = GetJsonObject(data, "t");
+            if (type == null) return;
 
-            string connectionData = CreateConnectionData(_token);
+            string value = type.ToString();
+            switch (value)
+            {
+                case "READY":
+                    {
+                        Logger.Log(Logger.Level.PLATFORM, "Ready packet revieved from Discord, starting stayalive loop");
+                        Task.Run(() =>
+                        {
+                            while (true)
+                            {
+                                DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-            SendString(connectionData);
+                                long date = (long)(DateTime.UtcNow - origin).TotalMilliseconds;
+
+                                JObject datePacket = new JObject();
+                                datePacket.Add("op", 1);
+                                datePacket.Add("d", date);
+
+                                SendString(datePacket.ToString());
+
+                                Thread.Sleep(int.Parse(data["d"]["heartbeat_interval"].ToString()) - 5000);
+                            }
+                        });
+
+                        foreach (var guild_ in data["d"]["guilds"])
+                        {
+                            Guild guild = new Guild();
+                            guild.Name = guild_["name"].ToString();
+                            guild.OwnerID = guild_["owner_id"].ToString();
+                            guild.ID = guild_["id"].ToString();
+
+                            foreach (var role_ in guild_["roles"])
+                            {
+                                Role role = new Role();
+                                role.Permissions = long.Parse(role_["permissions"].ToString());
+                                role.Name = role_["name"].ToString();
+                                role.ID = role_["id"].ToString();
+
+                                guild.Roles.Add(role);
+                            }
+
+                            foreach (var member_ in guild_["members"])
+                            {
+                                Member member = new Member();
+                                member.User = member_["user"]["username"].ToString();
+                                member.ID = member_["user"]["id"].ToString();
+
+                                foreach (var role_ in member_["roles"])
+                                {
+                                    member.RoleIDs.Add(role_.ToString());
+                                }
+
+                                guild.Members.Add(member);
+                            }
+
+                            foreach (var channel_ in guild_["channels"])
+                            {
+                                Channel channel = new Channel();
+                                channel.Type = channel_["type"].ToString();
+                                channel.Position = int.Parse(channel_["position"].ToString());
+                                channel.Name = channel_["name"].ToString();
+                                channel.ID = channel_["id"].ToString();
+
+                                foreach (var overwrite_ in channel_["permission_overwrites"])
+                                {
+                                    var overwrite = new Channel.PermissionOverwrites();
+                                    overwrite.Type = overwrite_["type"].ToString();
+                                    overwrite.ID = overwrite_["id"].ToString();
+                                    overwrite.Deny = int.Parse(overwrite_["deny"].ToString());
+                                    overwrite.Allow = int.Parse(overwrite_["allow"].ToString());
+
+                                    channel.Overwrites.Add(overwrite);
+                                }
+
+                                guild.Channels.Add(channel);
+                            }
+
+                            _guilds.Add(guild);
+                        }
+                        break;
+                    }
+                case "MESSAGE_CREATE":
+                    {
+                        string user = data["d"]["author"]["username"].ToString();
+                        string content = data["d"]["content"].ToString();
+                        string userID = data["d"]["author"]["id"].ToString();
+                        string channelID = data["d"]["channel_id"].ToString();
+                        string id = data["d"]["id"].ToString();
+
+                        ProcessMessage(this, new DiscordMessage(user, content, userID, channelID, id));
+                        break;
+                    }
+                case "GUILD_MEMBER_UPDATE":
+                    {
+                        var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+
+                        if (guilds.Count() == 1)
+                        {
+                            var members = guilds.First().Members.Where(a => a.ID == data["d"]["user"]["id"].ToString());
+
+                            if (members.Count() == 1)
+                            {
+                                members.First().RoleIDs.Clear();
+                                foreach (var role in data["d"]["roles"])
+                                {
+                                    members.First().RoleIDs.Add(role.ToString());
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+                case "GUILD_ROLE_UPDATE":
+                    {
+                        var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+
+                        if (guilds.Count() == 1)
+                        {
+                            var roles = guilds.First().Roles.Where(a => a.ID == data["d"]["role"]["id"].ToString());
+
+                            if (roles.Count() == 1)
+                            {
+                                roles.First().Permissions = long.Parse(data["d"]["role"]["permissions"].ToString());
+                                roles.First().Name = data["d"]["role"]["name"].ToString();
+                            }
+                        }
+
+                        break;
+                    }
+                case "GUILD_ROLE_DELETE":
+                    {
+                        var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+
+                        if (guilds.Count() == 1)
+                        {
+                            var roles = guilds.First().Roles.Where(a => a.ID == data["d"]["role_id"].ToString());
+
+                            if (roles.Count() == 1)
+                            {
+                                guilds.First().Roles.Remove(roles.First());
+                            }
+                        }
+
+                        break;
+                    }
+                case "GUILD_ROLE_CREATE":
+                    {
+                        var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+
+                        if (guilds.Count() == 1)
+                        {
+                            Role role = new Role();
+                            role.Permissions = long.Parse(data["d"]["role"]["permissions"].ToString());
+                            role.Name = data["d"]["role"]["name"].ToString();
+                            role.ID = data["d"]["role"]["id"].ToString();
+
+                            guilds.First().Roles.Add(role);
+                        }
+
+                        break;
+                    }
+                case "PRESENCE_UPDATE":
+                    {
+                        var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+
+                        if (guilds.Count() == 1)
+                        {
+                            var members = guilds.First().Members.Where(a => a.ID == data["d"]["user"]["id"].ToString());
+
+                            if (members.Count() == 0)
+                            {
+                                Member member = new Member();
+                                member.ID = data["d"]["user"]["id"].ToString();
+                                member.User = data["d"]["user"]["username"].ToString();
+
+                                guilds.First().Members.Add(member);
+                            }
+                            else if (members.Count() == 1)
+                            {
+                                members.First().User = data["d"]["user"]["username"].ToString();
+                            }
+                        }
+
+                        break;
+                    }
+                default:
+                    {
+                        Logger.Log(Logger.Level.WARNING, $"Unknown type {value}");
+                        break;
+                    }
+            }
         }
 
         public override void Run()
         {
-            lock (_socketLock)
-            {
-                Reconnect();
-            }
+            Reconnect();
 
             while (true)
             {
-                //TODO: some async event for cleaner synchronisation among threads
-                if (_shouldReconnect)
-                {
-                    lock (_socketLock)
-                    {
-                        Logger.Log(Logger.Level.PLATFORM, "Attempting to reconnect to Discord platform");
-                        Reconnect();
-                        _guilds.Clear();
-                    }
-                    _shouldReconnect = false;
-                }
-
                 JObject data = RecieveDiscord();
 
                 if (data == null)
@@ -245,211 +446,13 @@ namespace DiscordPlatform
                     continue;
                 }
 
-                var type = data["t"];
-                if (type == null)
-                {
-                    Logger.Log(Logger.Level.WARNING, "Packet recieved from Discord does not contain a defined type");
-                    continue;
-                }
-
-                string value = type.ToString();
-                switch (value)
-                {
-                    case "READY":
-                        {
-                            Logger.Log(Logger.Level.PLATFORM, "Ready packet revieved from Discord, starting stayalive loop");
-                            Task.Run(() =>
-                            {
-                                while (true)
-                                {
-                                    DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
-                                    long date = (long)(DateTime.UtcNow - origin).TotalMilliseconds;
-
-                                    JObject datePacket = new JObject();
-                                    datePacket.Add("op", 1);
-                                    datePacket.Add("d", date);
-
-                                    SendString(datePacket.ToString());
-
-                                    Thread.Sleep(int.Parse(data["d"]["heartbeat_interval"].ToString()) - 5000);
-                                }
-                            });
-
-                            foreach (var guild_ in data["d"]["guilds"])
-                            {
-                                Guild guild = new Guild();
-                                guild.Name = guild_["name"].ToString();
-                                guild.OwnerID = guild_["owner_id"].ToString();
-                                guild.ID = guild_["id"].ToString();
-
-                                foreach (var role_ in guild_["roles"])
-                                {
-                                    Role role = new Role();
-                                    role.Permissions = long.Parse(role_["permissions"].ToString());
-                                    role.Name = role_["name"].ToString();
-                                    role.ID = role_["id"].ToString();
-
-                                    guild.Roles.Add(role);
-                                }
-
-                                foreach (var member_ in guild_["members"])
-                                {
-                                    Member member = new Member();
-                                    member.User = member_["user"]["username"].ToString();
-                                    member.ID = member_["user"]["id"].ToString();
-
-                                    foreach (var role_ in member_["roles"])
-                                    {
-                                        member.RoleIDs.Add(role_.ToString());
-                                    }
-
-                                    guild.Members.Add(member);
-                                }
-
-                                foreach (var channel_ in guild_["channels"])
-                                {
-                                    Channel channel = new Channel();
-                                    channel.Type = channel_["type"].ToString();
-                                    channel.Position = int.Parse(channel_["position"].ToString());
-                                    channel.Name = channel_["name"].ToString();
-                                    channel.ID = channel_["id"].ToString();
-
-                                    foreach (var overwrite_ in channel_["permission_overwrites"])
-                                    {
-                                        var overwrite = new Channel.PermissionOverwrites();
-                                        overwrite.Type = overwrite_["type"].ToString();
-                                        overwrite.ID = overwrite_["id"].ToString();
-                                        overwrite.Deny = int.Parse(overwrite_["deny"].ToString());
-                                        overwrite.Allow = int.Parse(overwrite_["allow"].ToString());
-
-                                        channel.Overwrites.Add(overwrite);
-                                    }
-
-                                    guild.Channels.Add(channel);
-                                }
-
-                                _guilds.Add(guild);
-                            }
-
-                            break;
-                        }
-                    case "MESSAGE_CREATE":
-                        {
-                            string user = data["d"]["author"]["username"].ToString();
-                            string content = data["d"]["content"].ToString();
-                            string userID = data["d"]["author"]["id"].ToString();
-                            string channelID = data["d"]["channel_id"].ToString();
-                            string id = data["d"]["id"].ToString();
-
-                            ProcessMessage(this, new DiscordMessage(user, content, userID, channelID, id));
-                            break;
-                        }
-                    case "GUILD_MEMBER_UPDATE":
-                        {
-                            var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
-
-                            if (guilds.Count() == 1)
-                            {
-                                var members = guilds.First().Members.Where(a => a.ID == data["d"]["user"]["id"].ToString());
-
-                                if (members.Count() == 1)
-                                {
-                                    members.First().RoleIDs.Clear();
-                                    foreach (var role in data["d"]["roles"])
-                                    {
-                                        members.First().RoleIDs.Add(role.ToString());
-                                    }
-                                }
-                            }
-
-                            break;
-                        }
-                    case "GUILD_ROLE_UPDATE":
-                        {
-                            var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
-
-                            if (guilds.Count() == 1)
-                            {
-                                var roles = guilds.First().Roles.Where(a => a.ID == data["d"]["role"]["id"].ToString());
-
-                                if (roles.Count() == 1)
-                                {
-                                    roles.First().Permissions = long.Parse(data["d"]["role"]["permissions"].ToString());
-                                    roles.First().Name = data["d"]["role"]["name"].ToString();
-                                }
-                            }
-
-                            break;
-                        }
-                    case "GUILD_ROLE_DELETE":
-                        {
-                            var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
-
-                            if (guilds.Count() == 1)
-                            {
-                                var roles = guilds.First().Roles.Where(a => a.ID == data["d"]["role_id"].ToString());
-
-                                if (roles.Count() == 1)
-                                {
-                                    guilds.First().Roles.Remove(roles.First());
-                                }
-                            }
-
-                            break;
-                        }
-                    case "GUILD_ROLE_CREATE":
-                        {
-                            var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
-
-                            if (guilds.Count() == 1)
-                            {
-                                Role role = new Role();
-                                role.Permissions = long.Parse(data["d"]["role"]["permissions"].ToString());
-                                role.Name = data["d"]["role"]["name"].ToString();
-                                role.ID = data["d"]["role"]["id"].ToString();
-
-                                guilds.First().Roles.Add(role);
-                            }
-
-                            break;
-                        }
-                    case "PRESENCE_UPDATE":
-                        {
-                            var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
-
-                            if (guilds.Count() == 1)
-                            {
-                                var members = guilds.First().Members.Where(a => a.ID == data["d"]["user"]["id"].ToString());
-
-                                if (members.Count() == 0)
-                                {
-                                    Member member = new Member();
-                                    member.ID = data["d"]["user"]["id"].ToString();
-                                    member.User = data["d"]["user"]["username"].ToString();
-
-                                    guilds.First().Members.Add(member);
-                                }
-                                else if (members.Count() == 1)
-                                {
-                                    members.First().User = data["d"]["user"]["username"].ToString();
-                                }
-                            }
-
-                            break;
-                        }
-                    default:
-                        {
-                            Logger.Log(Logger.Level.WARNING, $"Unknown type {value}");
-                            break;
-                        }
-                }
+                HandlePacket(data);
             }
         }
 
         private Task SendString(string data)
         {
-            lock (_socketLock)
+            lock (_connectionLock)
             {
                 ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(data));
                 return _socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
@@ -470,37 +473,21 @@ namespace DiscordPlatform
             HttpWebRequest request = WebRequest.CreateHttp(string.Format(@"https://discordapp.com/api/channels/{0}/messages", (data.Origin as DiscordMessage).ChannelID));
             request.Method = "POST";
             request.ContentType = "application/json";
+            request.Headers.Add("authorization", _token);
             StreamWriter requestWriter = new StreamWriter(request.GetRequestStream());
             requestWriter.Write(content.ToString());
             requestWriter.Flush();
             requestWriter.Close();
 
-            int attempts = 0;
-            bool attempting = true;
-            while (attempting)
+            try
             {
-                request.Headers.Add("authorization", _token);
-
-                try
-                {
-                    request.GetResponse().Close();
-                    attempting = false;
-                }
-                catch
-                {
-                    Logger.Log(Logger.Level.WARNING, $"Error sending message to Discord server, retrying ({attempts++})");
-
-                    if (attempts > 5)
-                    {
-                        Logger.Log(Logger.Level.ERROR, "Discord platforms seems to have been disconnected, requesting reconnect");
-                        _shouldReconnect = true;
-                        attempts = 0;
-                        while (_shouldReconnect)
-                        {
-                            Thread.Sleep(1000); //TODO: stupid looping
-                        }
-                    }
-                }
+                request.GetResponse().Close();
+            }
+            catch
+            {
+                Logger.Log("Error sending message to Discord, reconnecting");
+                Reconnect();
+                Send(data);
             }
         }
 
