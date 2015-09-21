@@ -518,6 +518,10 @@ namespace DiscordPlatform
             request.Method = "POST";
             request.ContentType = "application/json";
             request.Headers.Add("authorization", _token);
+
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3;
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+
             StreamWriter requestWriter = new StreamWriter(request.GetRequestStream());
             requestWriter.Write(content.ToString());
             requestWriter.Flush();
