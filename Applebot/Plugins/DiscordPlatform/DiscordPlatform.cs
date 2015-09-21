@@ -216,7 +216,7 @@ namespace DiscordPlatform
                 if (_socket != null)
                 {
                     if (_socket.State != WebSocketState.Closed)
-                        _socket.CloseAsync(WebSocketCloseStatus.Empty, "Reconnecting", CancellationToken.None);
+                        _socket.CloseAsync(WebSocketCloseStatus.Empty, null, CancellationToken.None);
                     _socket.Dispose();
                 }
                 _socket = new ClientWebSocket();
