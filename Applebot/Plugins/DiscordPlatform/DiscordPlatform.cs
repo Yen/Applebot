@@ -182,6 +182,13 @@ namespace DiscordPlatform
                     {
                         var result = _socket.ReceiveAsync(buffer, CancellationToken.None).Result;
 
+                        if (result.Count == 0)
+                        {
+                            Reconnect();
+                            return RecieveDiscord();
+                        }
+
+
                         recieved.AddRange(buffer.Take(result.Count));
 
                         if (result.EndOfMessage)
@@ -211,6 +218,10 @@ namespace DiscordPlatform
         {
             lock (_connectionLock)
             {
+             //   Console.WriteLine(Environment.StackTrace);
+
+                _guilds.Clear();
+
                 _token = GetLoginToken();
 
                 if (_socket != null)
@@ -259,6 +270,7 @@ namespace DiscordPlatform
                         {
                             int id = _taskID;
                             bool running = true;
+                            int interval = int.Parse(data["d"]["heartbeat_interval"].ToString());
                             while (running)
                             {
                                 if (id != _taskID)
@@ -276,8 +288,9 @@ namespace DiscordPlatform
                                 datePacket.Add("d", date);
 
                                 SendString(datePacket.ToString());
+                              //  Logger.Log(Logger.Level.DEBUG, "Heartbeat");
 
-                                Thread.Sleep(int.Parse(data["d"]["heartbeat_interval"].ToString()) - 5000);
+                                Thread.Sleep(TimeSpan.FromMilliseconds(interval - 1000));
                             }
                         });
 
@@ -442,9 +455,18 @@ namespace DiscordPlatform
 
                         break;
                     }
+                case "TYPING_START":
+                case "MESSAGE_ACK": // possibly something to do with the unread messages prompts in the client, not needed
+                case "VOICE_STATE_UPDATE":
+                case "MESSAGE_UPDATE": // seems to be information on embeds once the server has looked over it
+                    {
+                        // ignored messages
+                        break;
+                    }
                 default:
                     {
                         Logger.Log(Logger.Level.WARNING, $"Unknown type {value}");
+                       // Console.WriteLine(data);
                         break;
                     }
             }
