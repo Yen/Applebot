@@ -179,11 +179,7 @@ namespace DiscordPlatform
             {
                 try
                 {
-                    WebSocketReceiveResult result = null;
-                    lock (_connectionLock)
-                    {
-                        result = _socket.ReceiveAsync(buffer, CancellationToken.None).Result;
-                    }
+                    WebSocketReceiveResult result = _socket.ReceiveAsync(buffer, CancellationToken.None).Result;
 
                     if ((result == null) || (result.Count == 0))
                     {
@@ -290,7 +286,7 @@ namespace DiscordPlatform
 
                                 SendString(datePacket.ToString());
 
-                                Thread.Sleep(TimeSpan.FromMilliseconds(interval - 5000));
+                                Thread.Sleep(TimeSpan.FromMilliseconds(interval - 10000));
                             }
                             Logger.Log(Logger.Level.PLATFORM, $"Discord keep alive task, id ({id}), terminated");
                         });
