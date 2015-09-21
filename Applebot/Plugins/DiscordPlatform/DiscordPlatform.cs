@@ -218,8 +218,6 @@ namespace DiscordPlatform
         {
             lock (_connectionLock)
             {
-             //   Console.WriteLine(Environment.StackTrace);
-
                 _guilds.Clear();
 
                 _token = GetLoginToken();
@@ -231,6 +229,7 @@ namespace DiscordPlatform
                     _socket.Dispose();
                 }
                 _socket = new ClientWebSocket();
+                _socket.Options.KeepAliveInterval = TimeSpan.Zero;
 
                 Logger.Log(Logger.Level.PLATFORM, "Attempting connection to Discord websocket hub server");
 
@@ -264,11 +263,12 @@ namespace DiscordPlatform
             {
                 case "READY":
                     {
-                        Logger.Log(Logger.Level.PLATFORM, "Ready packet revieved from Discord, starting stayalive loop");
+                        Logger.Log(Logger.Level.PLATFORM, "Ready packet revieved from Discord");
                         _taskID++;
                         Task.Run(() =>
                         {
                             int id = _taskID;
+                            Logger.Log(Logger.Level.PLATFORM, $"Starting new Discord keep alive task, id ({id})");
                             bool running = true;
                             int interval = int.Parse(data["d"]["heartbeat_interval"].ToString());
                             while (running)
@@ -288,10 +288,10 @@ namespace DiscordPlatform
                                 datePacket.Add("d", date);
 
                                 SendString(datePacket.ToString());
-                              //  Logger.Log(Logger.Level.DEBUG, "Heartbeat");
 
-                                Thread.Sleep(TimeSpan.FromMilliseconds(interval - 1000));
+                                Thread.Sleep(TimeSpan.FromMilliseconds(interval - 5000));
                             }
+                            Logger.Log(Logger.Level.PLATFORM, $"Discord keep alive task, id ({id}), terminated");
                         });
 
                         foreach (var guild_ in data["d"]["guilds"])
@@ -466,7 +466,6 @@ namespace DiscordPlatform
                 default:
                     {
                         Logger.Log(Logger.Level.WARNING, $"Unknown type {value}");
-                       // Console.WriteLine(data);
                         break;
                     }
             }
@@ -492,10 +491,15 @@ namespace DiscordPlatform
 
         private Task SendString(string data)
         {
-            lock (_connectionLock)
+            try
             {
                 ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(data));
                 return _socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+            catch
+            {
+                Reconnect();
+                return SendString(data);
             }
         }
 
@@ -525,7 +529,6 @@ namespace DiscordPlatform
             }
             catch
             {
-                Logger.Log("Error sending message to Discord, reconnecting");
                 Reconnect();
                 Send(data);
             }
