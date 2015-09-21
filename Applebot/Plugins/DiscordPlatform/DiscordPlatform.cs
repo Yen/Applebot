@@ -82,6 +82,7 @@ namespace DiscordPlatform
         object _connectionLock = new object();
 
         SynchronizedCollection<Guild> _guilds = new SynchronizedCollection<Guild>();
+        int _taskID = 0;
 
         public DiscordPlatform()
         {
@@ -169,7 +170,7 @@ namespace DiscordPlatform
 
         private JObject RecieveDiscord()
         {
-            lock(_connectionLock)
+            lock (_connectionLock)
             {
                 List<byte> recieved = new List<byte>();
                 ArraySegment<byte> buffer = new ArraySegment<byte>(new byte[1024]);
@@ -177,12 +178,20 @@ namespace DiscordPlatform
                 bool completed = false;
                 while (!completed)
                 {
-                    var result = _socket.ReceiveAsync(buffer, CancellationToken.None).Result;
+                    try
+                    {
+                        var result = _socket.ReceiveAsync(buffer, CancellationToken.None).Result;
 
-                    recieved.AddRange(buffer.Take(result.Count));
+                        recieved.AddRange(buffer.Take(result.Count));
 
-                    if (result.EndOfMessage)
-                        completed = true;
+                        if (result.EndOfMessage)
+                            completed = true;
+                    }
+                    catch
+                    {
+                        Reconnect();
+                        return RecieveDiscord();
+                    }
                 }
 
                 string decoded = Encoding.UTF8.GetString(recieved.ToArray());
@@ -245,10 +254,19 @@ namespace DiscordPlatform
                 case "READY":
                     {
                         Logger.Log(Logger.Level.PLATFORM, "Ready packet revieved from Discord, starting stayalive loop");
+                        _taskID++;
                         Task.Run(() =>
                         {
-                            while (true)
+                            int id = _taskID;
+                            bool running = true;
+                            while (running)
                             {
+                                if (id != _taskID)
+                                {
+                                    running = false;
+                                    continue;
+                                }
+
                                 DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
                                 long date = (long)(DateTime.UtcNow - origin).TotalMilliseconds;
