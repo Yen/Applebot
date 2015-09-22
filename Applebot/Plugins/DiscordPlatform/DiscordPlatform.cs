@@ -8,7 +8,9 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
+using System.Net.Security;
 using System.Net.WebSockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -130,7 +132,7 @@ namespace DiscordPlatform
             {
                 using (WebClient client = new WebClient())
                 {
-                    byte[] buffer = client.UploadValues("https://discordapp.com/api/auth/login", _loginData);
+                    byte[] buffer = client.UploadValues("http://discordapp.com/api/auth/login", _loginData);
 
                     JToken json = JToken.Parse(Encoding.UTF8.GetString(buffer));
                     return json["token"].ToString();
@@ -231,11 +233,13 @@ namespace DiscordPlatform
                 Logger.Log(Logger.Level.PLATFORM, "Attempting connection to Discord websocket hub server");
 
                 _socket.ConnectAsync(new Uri("wss://discordapp.com/hub"), CancellationToken.None).Wait();
+
+                string connectionData = CreateConnectionData(_token);
+
+                SendString(connectionData);
+
+                while (Update() == false) { }
             }
-
-            string connectionData = CreateConnectionData(_token);
-
-            SendString(connectionData);
         }
 
         private JToken GetJsonObject(JToken data, params string[] args)
@@ -250,10 +254,10 @@ namespace DiscordPlatform
             return result;
         }
 
-        private void HandlePacket(JToken data)
+        private bool HandlePacket(JToken data)
         {
             var type = GetJsonObject(data, "t");
-            if (type == null) return;
+            if (type == null) return false;
 
             string value = type.ToString();
             switch (value)
@@ -346,7 +350,7 @@ namespace DiscordPlatform
 
                             _guilds.Add(guild);
                         }
-                        break;
+                        return true;
                     }
                 case "MESSAGE_CREATE":
                     {
@@ -466,6 +470,7 @@ namespace DiscordPlatform
                         break;
                     }
             }
+            return false;
         }
 
         public override void Run()
@@ -474,16 +479,21 @@ namespace DiscordPlatform
 
             while (true)
             {
-                JObject data = RecieveDiscord();
-
-                if (data == null)
-                {
-                    Logger.Log(Logger.Level.WARNING, "Error parsing packet recieved from Discord, skipping");
-                    continue;
-                }
-
-                HandlePacket(data);
+                Update();
             }
+        }
+
+        private bool Update()
+        {
+            JObject data = RecieveDiscord();
+
+            if (data == null)
+            {
+                Logger.Log(Logger.Level.WARNING, "Error parsing packet recieved from Discord, skipping");
+                return false;
+            }
+
+            return HandlePacket(data);
         }
 
         private Task SendString(string data)
@@ -514,13 +524,16 @@ namespace DiscordPlatform
             JObject content = new JObject();
             content.Add("content", data.Content);
 
-            HttpWebRequest request = WebRequest.CreateHttp(string.Format(@"https://discordapp.com/api/channels/{0}/messages", (data.Origin as DiscordMessage).ChannelID));
+            HttpWebRequest request = WebRequest.CreateHttp(string.Format(@"http://discordapp.com/api/channels/{0}/messages", (data.Origin as DiscordMessage).ChannelID));
             request.Method = "POST";
             request.ContentType = "application/json";
             request.Headers.Add("authorization", _token);
 
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3;
-            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(delegate (object sender, X509Certificate certification, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+            {
+                return true;
+            });
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls;
 
             StreamWriter requestWriter = new StreamWriter(request.GetRequestStream());
             requestWriter.Write(content.ToString());
