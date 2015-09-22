@@ -154,7 +154,7 @@ namespace DiscordPlatform
 
             JObject d = new JObject();
             d.Add("token", token);
-            d.Add("v", 2);
+            d.Add("v", 3);
 
             JObject prop = new JObject();
             prop.Add("os", Environment.OSVersion.ToString());
@@ -232,14 +232,13 @@ namespace DiscordPlatform
 
                 Logger.Log(Logger.Level.PLATFORM, "Attempting connection to Discord websocket hub server");
 
-                _socket.ConnectAsync(new Uri("wss://discordapp.com/hub"), CancellationToken.None).Wait();
-
-                string connectionData = CreateConnectionData(_token);
-
-                SendString(connectionData);
-
-                while (Update() == false) { }
+                _socket.ConnectAsync(new Uri("wss://gateway-arthas.discord.gg"), CancellationToken.None).Wait();
             }
+
+            string connectionData = CreateConnectionData(_token);
+            SendString(connectionData);
+
+            while (Update() == false) { }
         }
 
         private JToken GetJsonObject(JToken data, params string[] args)
@@ -432,30 +431,30 @@ namespace DiscordPlatform
 
                         break;
                     }
-                case "PRESENCE_UPDATE":
-                    {
-                        var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+                case "PRESENCE_UPDATE": // seemed to change, no idea what this does now
+                    //{
+                    //    var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
 
-                        if (guilds.Count() == 1)
-                        {
-                            var members = guilds.First().Members.Where(a => a.ID == data["d"]["user"]["id"].ToString());
+                    //    if (guilds.Count() == 1)
+                    //    {
+                    //        var members = guilds.First().Members.Where(a => a.ID == data["d"]["user"]["id"].ToString());
 
-                            if (members.Count() == 0)
-                            {
-                                Member member = new Member();
-                                member.ID = data["d"]["user"]["id"].ToString();
-                                member.User = data["d"]["user"]["username"].ToString();
+                    //        if (members.Count() == 0)
+                    //        {
+                    //            Member member = new Member();
+                    //            member.ID = data["d"]["user"]["id"].ToString();
+                    //            member.User = data["d"]["user"]["username"].ToString();
 
-                                guilds.First().Members.Add(member);
-                            }
-                            else if (members.Count() == 1)
-                            {
-                                members.First().User = data["d"]["user"]["username"].ToString();
-                            }
-                        }
+                    //            guilds.First().Members.Add(member);
+                    //        }
+                    //        else if (members.Count() == 1)
+                    //        {
+                    //            members.First().User = data["d"]["user"]["username"].ToString();
+                    //        }
+                    //    }
 
-                        break;
-                    }
+                    //    break;
+                    //}
                 case "TYPING_START":
                 case "MESSAGE_ACK": // possibly something to do with the unread messages prompts in the client, not needed
                 case "VOICE_STATE_UPDATE":
@@ -528,12 +527,6 @@ namespace DiscordPlatform
             request.Method = "POST";
             request.ContentType = "application/json";
             request.Headers.Add("authorization", _token);
-
-            ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(delegate (object sender, X509Certificate certification, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-            {
-                return true;
-            });
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls;
 
             StreamWriter requestWriter = new StreamWriter(request.GetRequestStream());
             requestWriter.Write(content.ToString());
