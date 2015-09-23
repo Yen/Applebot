@@ -89,7 +89,6 @@
   <ItemGroup>
     <Content Include="..\Plugins\DiscordPlatform\bin\$(Configuration)\DiscordPlatform.dll">
       <Link>Plugins\DiscordPlatform.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Plugins\DiscordPlatform\discordsettings.xml">
       <Link>Settings\discordsettings.xml</Link>
@@ -117,6 +116,14 @@
     </Content>
     <Content Include="..\Plugins\UptimeCommand\bin\$(Configuration)\UptimeCommand.dll">
       <Link>Plugins\UptimeCommand.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Plugins\YoutubeParser\bin\$(Configuration)\YoutubeParser.dll">
+      <Link>Plugins\YoutubeParser.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Plugins\YoutubeParser\youtubeparser.xml">
+      <Link>Settings\youtubeparser.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="settings.xml">
