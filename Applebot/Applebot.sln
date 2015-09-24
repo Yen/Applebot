@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22823.1
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{DC626F05-74E0-4934-85BA-42DD1AAFB8AD}"
 EndProject
@@ -42,6 +42,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UptimeCommand", "Plugins\UptimeCommand\UptimeCommand.csproj", "{8CDCB9DB-51FC-464D-A4FB-9BAF14337ED5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YoutubeParser", "Plugins\YoutubeParser\YoutubeParser.csproj", "{E6F05C9B-A4C0-49C1-BCF8-A51630A31D7B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JohnCommand", "Plugins\JohnCommand\JohnCommand.csproj", "{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -185,6 +187,14 @@ Global
 		{E6F05C9B-A4C0-49C1-BCF8-A51630A31D7B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E6F05C9B-A4C0-49C1-BCF8-A51630A31D7B}.Release|x86.ActiveCfg = Release|Any CPU
 		{E6F05C9B-A4C0-49C1-BCF8-A51630A31D7B}.Release|x86.Build.0 = Release|Any CPU
+		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47}.Debug|x86.Build.0 = Debug|Any CPU
+		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47}.Release|x86.ActiveCfg = Release|Any CPU
+		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -206,5 +216,6 @@ Global
 		{A0058276-69F9-4C58-B408-D205887FC464} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 		{8CDCB9DB-51FC-464D-A4FB-9BAF14337ED5} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 		{E6F05C9B-A4C0-49C1-BCF8-A51630A31D7B} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
+		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 	EndGlobalSection
 EndGlobal
