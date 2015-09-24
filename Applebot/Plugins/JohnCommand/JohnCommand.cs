@@ -13,7 +13,7 @@ namespace JohnCommand
 
         // directly stolen from /u/Poyoarya http://poyoarya.github.io/john.html
 
-        string[] johnPrefix = new string[] { "I lost because", "I only lost because", "He won because", "He only won because" };
+        string[] johnPrefix = new string[] { "I lost because", "I only lost because", "They won because", "They only won because" };
 
         string[] johnSubject = new string[] {
     "my controller is",
@@ -124,7 +124,7 @@ namespace JohnCommand
     "not wearing their glasses",
     "sober",
     "using items",
-    "not letting me grab him",
+    "not letting me grab them",
     "shielding too much",
     "air dodging",
     "rolling",
@@ -352,7 +352,7 @@ namespace JohnCommand
             int subjectIndex = random.Next(0, tempSubject.Length);
             int problemIndex = random.Next(0, tempProblem.Length);
 
-            string result = tempPrefix[prefixIndex] + " " + tempSubject[subjectIndex] + " " + tempProblem[problemIndex] + ".";
+            string result = String.Format("{0} {1} {2}.", tempPrefix[prefixIndex], tempSubject[subjectIndex], tempProblem[problemIndex]);
 
             platform.Send(new SendData(result, false, message));
         }
