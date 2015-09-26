@@ -13,6 +13,7 @@ namespace SimpleTextCommand
     public class SimpleTextCommand : Command
     {
         // design stolen from bashtech's GeoBot
+        // ACHTUNG!!! SPAGHETTI
 
         private XmlNodeList _patterns;
         private string _configLocation;
@@ -156,6 +157,38 @@ namespace SimpleTextCommand
 
         }
 
+        private List<String[]> BuildCommandList(bool isComplex)
+        {
+
+            List<String[]> cmdlist = new List<String[]>();
+
+            lock (_commandSettings)
+            {
+                XmlNodeList commands = _commandSettings.SelectNodes("/patterns/pattern");
+                if (commands.Count > 0)
+                {
+                    foreach (XmlNode node in commands)
+                    {
+                        string type = node.Attributes["type"].Value;
+                        string trigger = node.Attributes["trigger"].Value;
+                        string response = node.Attributes["response"].Value;
+
+                        string result = type + " | " + trigger;
+
+                        if ((node.Attributes["type"].Value == "regex") == isComplex)
+                        {
+                            cmdlist.Add(new String[]{trigger, response});
+                        }
+
+                    }
+
+                }
+
+            }
+
+            return cmdlist;
+        }
+
         public override void HandleMessage<T1, T2>(T1 message, T2 platform)
         {
             string[] parts = message.Content.Split(' ');
@@ -164,6 +197,7 @@ namespace SimpleTextCommand
             {
                 bool isComplex = (parts[0] == "!autoreply");
                 string syntaxHelp = parts[0];
+                string feedbackHelp = parts[0].Substring(1);
                 bool elevated = platform.CheckElevatedStatus(message);
 
                 if (!elevated)
@@ -178,7 +212,27 @@ namespace SimpleTextCommand
                     return;
                 }
 
-                // TODO: More graceful removal of autoreplies
+                if (parts[1] == "list")
+                {
+                    List<String[]> cmdlist = BuildCommandList(isComplex);
+
+                    foreach (string[] cmd in cmdlist)
+                    {
+
+                        int index = cmdlist.IndexOf(cmd) + 1;
+                        string trigger = cmd[0];
+
+                        platform.Send(new SendData(index + ": " + trigger, false, message));
+                    }
+
+                    if (cmdlist.Count == 0)
+                    {
+                        platform.Send(new SendData("There are no patterns of that type. Try adding one with \"" + syntaxHelp + " add\"?", false, message));
+                    }
+
+                }
+
+
 
                 if (parts[1] == "remove")
                 {
@@ -188,15 +242,32 @@ namespace SimpleTextCommand
                         return;
                     }
 
+                    string result = parts[2];
                     bool replaced = RemovePattern(parts[2]);
+
+                    int index;
+                    if (isComplex && Int32.TryParse(parts[2], out index) && !replaced)
+                    {
+                        index--;
+
+                        List<String[]> cmdlist = BuildCommandList(isComplex);
+                        if (cmdlist.ElementAtOrDefault(index) != null)
+                        {
+                            replaced = RemovePattern(cmdlist[index][0]);
+                        }
+                        if (replaced) {
+                            result = cmdlist[index][0];
+                        }
+
+                    }
 
                     if (replaced)
                     {
-                        platform.Send(new SendData("Removed pattern " + parts[2] + ".", false, message));
+                        platform.Send(new SendData("Removed pattern \"" + result + "\".", false, message));
                     }
                     else
                     {
-                        platform.Send(new SendData("Pattern " + parts[2] + " doesn't exist. :v", false, message));
+                        platform.Send(new SendData("Pattern \"" + result + "\" doesn't exist. :v", false, message));
                     }
 
                     return;
@@ -219,11 +290,11 @@ namespace SimpleTextCommand
 
                         if (replaced)
                         {
-                            platform.Send(new SendData("Replaced pattern " + parts[2] + ".", false, message));
+                            platform.Send(new SendData("Replaced pattern \"" + parts[2] + "\".", false, message));
                         }
                         else
                         {
-                            platform.Send(new SendData("Added pattern " + parts[2] + ".", false, message));
+                            platform.Send(new SendData("Added pattern \"" + parts[2] + "\".", false, message));
                         }
 
                     }
