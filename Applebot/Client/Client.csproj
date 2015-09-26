@@ -130,6 +130,10 @@
       <Link>Settings\youtubeparser.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\ShortURLFilter\bin\Debug\ShortURLFilter.dll">
+      <Link>Plugins\ShortURLFilter.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="settings.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
