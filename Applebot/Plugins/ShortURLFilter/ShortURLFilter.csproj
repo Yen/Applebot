@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{79DBC660-DD96-4B07-99D6-AED7772A5287}</ProjectGuid>
+    <ProjectGuid>{88F3B44C-B713-4746-84E3-3CC7856E3107}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ShortURLFilter</RootNamespace>
@@ -40,15 +40,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ShortURLFilter.cs" />
+    <Compile Include="Class1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ApplebotAPI\ApplebotAPI.csproj">
+    <ProjectReference Include="..\..\ApplebotAPI\ApplebotAPI.csproj">
       <Project>{e5ed57f8-2652-4de4-a2a9-b6d4c558391c}</Project>
       <Name>ApplebotAPI</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Plugins\TwitchPlatform\TwitchPlatform.csproj">
+    <ProjectReference Include="..\TwitchPlatform\TwitchPlatform.csproj">
       <Project>{e5dd6262-b81e-4afc-8644-a9c99a050378}</Project>
       <Name>TwitchPlatform</Name>
     </ProjectReference>
