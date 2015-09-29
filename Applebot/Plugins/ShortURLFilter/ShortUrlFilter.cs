@@ -17,7 +17,7 @@ namespace ShortURLFilter
 
         string filter = @".*(bit\.ly|tinyurl\.com|clck\.ru|goo\.gl|x.co|j\.mp|ow\.ly).*";
 
-        public ShortURLFilter() : base("ShortURLFilter")
+        public ShortURLFilter() : base("ShortURLFilter", TimeSpan.Zero)
         {
             Expressions.Add(new Regex(filter));
         }
