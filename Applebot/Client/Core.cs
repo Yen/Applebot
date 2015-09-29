@@ -7,7 +7,7 @@ using ApplebotAPI;
 using System.IO;
 using System.Reflection;
 
-namespace ClientNew
+namespace Client
 {
     class Core
     {

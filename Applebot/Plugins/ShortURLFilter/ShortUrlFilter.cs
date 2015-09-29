@@ -24,6 +24,7 @@ namespace ShortURLFilter
 
         public override void HandleMessage<T1, T2>(T1 message, T2 platform)
         {
+            if (!platform.CheckElevatedStatus(message))
                 platform.Send(new SendData(String.Format(".timeout {0} 1", message.Sender), false, message));
         }
     }
