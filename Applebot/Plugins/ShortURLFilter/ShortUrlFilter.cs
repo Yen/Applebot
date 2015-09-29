@@ -15,7 +15,7 @@ namespace ShortURLFilter
     public class ShortURLFilter : Command
     {
 
-        string filter = @".*(bit\.ly|tinyurl\.com|clck\.ru|goo\.gl|x.co|j\.mp).*";
+        string filter = @".*(bit\.ly|tinyurl\.com|clck\.ru|goo\.gl|x.co|j\.mp|ow\.ly).*";
 
         public ShortURLFilter() : base("ShortURLFilter")
         {
