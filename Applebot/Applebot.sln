@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22823.1
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{DC626F05-74E0-4934-85BA-42DD1AAFB8AD}"
 EndProject
@@ -36,6 +36,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JohnCommand", "Plugins\JohnCommand\JohnCommand.csproj", "{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShortURLFilter", "Plugins\ShortURLFilter\ShortURLFilter.csproj", "{88F3B44C-B713-4746-84E3-3CC7856E3107}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blacklist", "Plugins\Blacklist\Blacklist.csproj", "{7F9C4A8C-46F1-4CFE-972D-0527794D1E32}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -163,6 +165,14 @@ Global
 		{88F3B44C-B713-4746-84E3-3CC7856E3107}.Release|Any CPU.Build.0 = Release|Any CPU
 		{88F3B44C-B713-4746-84E3-3CC7856E3107}.Release|x86.ActiveCfg = Release|Any CPU
 		{88F3B44C-B713-4746-84E3-3CC7856E3107}.Release|x86.Build.0 = Release|Any CPU
+		{7F9C4A8C-46F1-4CFE-972D-0527794D1E32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F9C4A8C-46F1-4CFE-972D-0527794D1E32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F9C4A8C-46F1-4CFE-972D-0527794D1E32}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7F9C4A8C-46F1-4CFE-972D-0527794D1E32}.Debug|x86.Build.0 = Debug|Any CPU
+		{7F9C4A8C-46F1-4CFE-972D-0527794D1E32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F9C4A8C-46F1-4CFE-972D-0527794D1E32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F9C4A8C-46F1-4CFE-972D-0527794D1E32}.Release|x86.ActiveCfg = Release|Any CPU
+		{7F9C4A8C-46F1-4CFE-972D-0527794D1E32}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -182,5 +192,6 @@ Global
 		{E6F05C9B-A4C0-49C1-BCF8-A51630A31D7B} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 		{88F3B44C-B713-4746-84E3-3CC7856E3107} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
+		{7F9C4A8C-46F1-4CFE-972D-0527794D1E32} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 	EndGlobalSection
 EndGlobal

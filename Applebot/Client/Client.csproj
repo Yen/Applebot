@@ -76,6 +76,13 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <Content Include="..\Plugins\Blacklist\bin\Debug\Blacklist.dll">
+      <Link>Plugins\Blacklist.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Settings\Blacklist.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\Plugins\DiscordPlatform\bin\$(Configuration)\DiscordPlatform.dll">
