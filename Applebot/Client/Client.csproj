@@ -80,11 +80,12 @@
       <Link>Plugins\Blacklist.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Settings\Blacklist.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\Plugins\Blacklist\bin\Debug\Blacklist.txt">
+      <Link>Settings\Blacklist.txt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\Plugins\DiscordPlatform\bin\$(Configuration)\DiscordPlatform.dll">
       <Link>Plugins\DiscordPlatform.dll</Link>
     </Content>
@@ -102,10 +103,6 @@
     </Content>
     <Content Include="..\Plugins\QueueCommand\bin\$(Configuration)\QueueCommand.dll">
       <Link>Plugins\QueueCommand.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\Plugins\ShortURLFilter\bin\Debug\ShortURLFilter.dll">
-      <Link>Plugins\ShortURLFilter.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Plugins\SimpleTextCommand\bin\$(Configuration)\SimpleTextCommand.dll">

@@ -29,7 +29,7 @@ namespace Blacklist
                 }
             } catch
             {
-                Logger.Log(Logger.Level.WARNING, "Blacklist file not found, deal with this");
+                Logger.Log(Logger.Level.WARNING, "Blacklist settings not found! (Should be in settings/Blacklist.txt)");
                 return;
             }
         }
