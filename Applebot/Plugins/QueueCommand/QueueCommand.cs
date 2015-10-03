@@ -176,7 +176,7 @@ namespace QueueCommand
                         }
                         else
                         {
-                            isOpen = true;
+                            isOpen = false;
                             platform.Send(new SendData("The queue is now closed.", false, message));
                             return;
                         }
