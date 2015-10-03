@@ -197,7 +197,9 @@ namespace SimpleTextCommand
             {
                 bool isComplex = (parts[0] == "!autoreply");
                 string syntaxHelp = parts[0];
-                string feedbackHelp = parts[0].Substring(1);
+                string feedbackHelp = isComplex ? "autoreply" : "command";
+                string feedbackPlural = isComplex ? "autoreplies" : "commands";
+                string feedbackCaps = isComplex ? "Autoreply" : "Command";
                 bool elevated = platform.CheckElevatedStatus(message);
 
                 if (!elevated)
@@ -227,7 +229,7 @@ namespace SimpleTextCommand
 
                     if (cmdlist.Count == 0)
                     {
-                        platform.Send(new SendData("There are no patterns of that type. Try adding one with \"" + syntaxHelp + " add\"?", false, message));
+                        platform.Send(new SendData("There are no " + feedbackPlural + ". Try adding one with \"" + syntaxHelp + " add\"?", false, message));
                     }
 
                 }
@@ -262,12 +264,12 @@ namespace SimpleTextCommand
                     }
 
                     if (replaced)
-                    {
-                        platform.Send(new SendData("Removed pattern \"" + result + "\".", false, message));
+                    {                       
+                        platform.Send(new SendData(String.Format("Removed {0} \"{1}\".", feedbackHelp, result), false, message));
                     }
                     else
                     {
-                        platform.Send(new SendData("Pattern \"" + result + "\" doesn't exist. :v", false, message));
+                        platform.Send(new SendData(String.Format("{0} \"{1}\" doesn't exist.", feedbackCaps, result), false, message));
                     }
 
                     return;
@@ -290,17 +292,17 @@ namespace SimpleTextCommand
 
                         if (replaced)
                         {
-                            platform.Send(new SendData("Replaced pattern \"" + parts[2] + "\".", false, message));
+                            platform.Send(new SendData(String.Format("Replaced {0} \"{1}\".", feedbackHelp, parts[2]), false, message));
                         }
                         else
                         {
-                            platform.Send(new SendData("Added pattern \"" + parts[2] + "\".", false, message));
+                            platform.Send(new SendData(String.Format("Added {0} \"{1}\".", feedbackHelp, parts[2]), false, message));
                         }
 
                     }
                     catch
                     {
-                        platform.Send(new SendData("Invalid regex?", false, message));
+                        platform.Send(new SendData("Error parsing your autoreply. Make sure your regex is valid!", false, message));
                         return;
                     }
 
