@@ -10,9 +10,8 @@ namespace QueueCommand
 {
     public class QueueCommand : Command
     {
-
-        public List<string[]> Queue;
-        public bool isOpen;
+        public List<Tuple<string, string>> Queue = new List<Tuple<string, string>>();
+        public bool isOpen = false;
 
         public QueueCommand() : base("QueueCommand")
         {
@@ -20,9 +19,6 @@ namespace QueueCommand
             Expressions.Add(new Regex("^!next\\b"));
             Expressions.Add(new Regex("^!leave\\b"));
             Expressions.Add(new Regex("^!queue\\b"));
-
-            Queue = new List<string[]> { };
-            isOpen = false;
         }
 
         public override void HandleMessage<T1, T2>(T1 message, T2 platform)
@@ -31,186 +27,111 @@ namespace QueueCommand
             string username = message.Sender;
             bool asOwner = platform.CheckElevatedStatus(message);
 
-            if (parts[0] == "!next")
-                if (asOwner)
-                {
-                    if (Queue.Count == 0)
-                    {
-                        platform.Send(new SendData("No one is in queue.", false, message));
-                        return;
-                    }
-
-                    string[] next = Queue[0];
-                    Queue.RemoveAt(0);
-                    platform.Send(new SendData("You're up, " + next[0] + " (" + next[2] + ")! Please join the room.", false, message));
-                    return;
-                }
-                else
-                {
-                    platform.Send(new SendData("The next waiting player is " + Queue.First()[0] + " (" + Queue.First()[2] + ").", false, message));
-                    return;
-                }
-
             if (parts[0] == "!join")
             {
-                if (isOpen == false)
+                if (!isOpen)
                 {
-                    platform.Send(new SendData("The queue is closed. Please wait for the broadcaster to open it!", false, message));
+                    platform.Send(new SendData("The queue is closed. Please wait for the broadcaster to open it.", false, message));
                     return;
                 }
-                if (parts.Length == 1)
+
+                if (parts.Length < 2)
                 {
-                    platform.Send(new SendData("Please specify an in-game name to join, like this: '!join QueenOfNasods'", false, message));
+                    platform.Send(new SendData("Please specify a name to join with, like this: \"!join QueenOfNasods\".", false, message));
+                    return;
+                }
+
+                var search = Queue.FirstOrDefault(x => x.Item1 == username);
+                if (search != null)
+                {
+                    platform.Send(new SendData(String.Format("You're already in queue (position {0}). To leave, use \"!leave\".", Queue.IndexOf(search) + 1), false, message));
                     return;
                 }
                 else
                 {
-                    bool duplicate = false;
-
-                    foreach (string[] item in Queue.ToList())
-                    {
-                        if (item[0] == username)
-                        {
-                            duplicate = true;
-                        }
-                    }
-                    if (duplicate)
-                    {
-                        platform.Send(new SendData("You're already in the queue.", false, message));
-                        return;
-                    }
-
-                    string response = message.Content.Substring(parts[0].Length + 1);
-
-                    string[] temp = { username };
-                    Queue.Add(temp.Concat(parts).ToArray());
-                    platform.Send(new SendData("Added " + username + " to queue as " + response + ". You are at position " + Queue.Count() + ".", false, message));
+                    Queue.Add(new Tuple<string, string>(username, parts[1]));
+                    platform.Send(new SendData(String.Format("Added {0} ({1}) to queue at position {2}.", username, parts[1], Queue.Count), false, message));
                     return;
                 }
             }
 
             if (parts[0] == "!leave")
             {
-
-
-                if (Queue.Count == 0)
+                var search = Queue.FirstOrDefault(x => x.Item1 == username);
+                if (search == null)
                 {
-                    platform.Send(new SendData("You're not in the queue.", false, message));
-                    return;
-                }
-
-                bool peaceout = false;
-
-                foreach (string[] item in Queue.ToList())
-                {
-                    if (item[0] == username)
-                    {
-                        Queue.Remove(item);
-                        peaceout = true;
-                    }
-                }
-                if (peaceout)
-                {
-                    platform.Send(new SendData("You've been removed from the queue.", false, message));
+                    platform.Send(new SendData("You're not in queue. To join, use \"!join [name]\".", false, message));
                     return;
                 }
                 else
                 {
-                    platform.Send(new SendData("You're not in the queue.", false, message));
+                    Queue.Remove(search);
+                    platform.Send(new SendData("You were removed from the queue.", false, message));
+                }
+            }
+
+            if (parts[0] == "!next" && asOwner)
+            {
+                if (Queue.Count == 0)
+                {
+                    platform.Send(new SendData("The queue is empty.", false, message));
                     return;
                 }
+
+                platform.Send(new SendData(String.Format("You're up, {0} ({1})! Please join the game.", Queue[0].Item1, Queue[0].Item2), false, message));
+                Queue.RemoveAt(0);
             }
 
             if (parts[0] == "!queue")
             {
-                if ((parts.Length > 1) && (asOwner == true))
+                if (parts.Length == 1)
                 {
-                    if (parts[1] == "remove" && parts.Length > 2)
+                    if (Queue.Count == 0)
                     {
-                        bool plsgo = false;
-
-                        string target = parts[2].ToLower();
-
-                        foreach (string[] item in Queue.ToList())
-                        {
-                            if (item[0] == target)
-                            {
-                                Queue.Remove(item);
-                                plsgo = true;
-                            }
-                        }
-
-                        if (plsgo)
-                        {
-                            platform.Send(new SendData("User was removed from queue.", false, message));
-                            return;
-                        }
-                        else
-                        {
-                            platform.Send(new SendData("User is not in queue.", false, message));
-                            return;
-                        }
-                    }
-
-
-                    if (parts[1] == "open")
-                    {
-                        if (isOpen == true)
-                        {
-                            platform.Send(new SendData("The queue is already open.", false, message));
-                            return;
-                        }
-                        else
-                        {
-                            isOpen = true;
-                            platform.Send(new SendData("The queue is now open! Join with \"!join [name]\".", false, message));
-                            return;
-                        }
-                    }
-                    if (parts[1] == "close")
-                    {
-                        if (isOpen == false)
-                        {
-                            platform.Send(new SendData("The queue is already closed.", false, message));
-                            return;
-                        }
-                        else
-                        {
-                            isOpen = false;
-                            platform.Send(new SendData("The queue is now closed.", false, message));
-                            return;
-                        }
-                    }
-                    if (parts[1] == "clear")
-                    {
-                        Queue.Clear();
-                        platform.Send(new SendData("Queue cleared. All players have been removed.", false, message));
+                        platform.Send(new SendData("The queue is empty.", false, message));
                         return;
                     }
+
+                    string result = "Currently waiting: ";
+                    foreach (Tuple<string, string> t in Queue)
+                    {
+                        result += String.Format("{0} ({1}), ", t.Item1, t.Item2);
+                    }
+                    result = result.Remove(result.Length - 2);
+
+                    platform.Send(new SendData(result, false, message));
+                    return;
                 }
-
-
-                if (Queue.Count == 0)
+               
+                if (parts[1] == "open" && asOwner)
                 {
-                    platform.Send(new SendData("No one is in queue.", false, message));
+                    platform.Send(new SendData(String.Format("The queue is {0} open.", isOpen ? "already" : "now"), false, message));
+                    isOpen = true;
                     return;
                 }
 
-
-                string finaloutput = "Currently waiting: ";
-                foreach (string[] item in Queue.ToList())
+                if (parts[1] == "close" && asOwner)
                 {
-                    string response = string.Join(" ", item).Substring(item[0].Length + item[1].Length + 2);
-                    finaloutput += item[0] + " (" + response + "), ";
+                    platform.Send(new SendData(String.Format("The queue is {0} closed.", isOpen ? "now" : "already"), false, message));
+                    isOpen = false;
+                    return;
                 }
 
-
-
-                finaloutput = finaloutput.Remove(finaloutput.Length - 2);
-                platform.Send(new SendData(finaloutput, false, message));
-                return;
+                if (parts[1] == "remove" && parts.Length == 3 && asOwner)
+                {
+                    var search = Queue.FirstOrDefault(x => x.Item1 == parts[2].ToLower());
+                    if (search == null)
+                    {
+                        platform.Send(new SendData(String.Format("No such user in queue.", Queue.IndexOf(search) + 1), false, message));
+                        return;
+                    }
+                    else
+                    {
+                        platform.Send(new SendData(String.Format("{0} ({1}) was removed from the queue.", search.Item1, search.Item2), false, message));
+                        Queue.Remove(search);
+                    }
+                }
             }
-
         }
     }
 }
