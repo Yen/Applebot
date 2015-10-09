@@ -189,6 +189,15 @@ namespace SimpleTextCommand
             return cmdlist;
         }
 
+        private string FormatCommandOutput(string raw, string sender)
+        {
+            raw = Regex.Replace(raw, "{u}", sender);
+            return raw;
+        }
+
+
+
+
         public override void HandleMessage<T1, T2>(T1 message, T2 platform)
         {
             string[] parts = message.Content.Split(' ');
@@ -324,7 +333,7 @@ namespace SimpleTextCommand
                         Regex r = new Regex(trigger);
                         if (r.IsMatch(message.Content))
                         {
-                            platform.Send(new SendData(node.Attributes["response"].Value, false, message));
+                            platform.Send(new SendData(FormatCommandOutput(node.Attributes["response"].Value, message.Sender), false, message));
                         }
                     }
 
@@ -332,7 +341,7 @@ namespace SimpleTextCommand
                     {
                         if (trigger == message.Content.Substring(1))
                         {
-                            platform.Send(new SendData(node.Attributes["response"].Value, false, message));
+                            platform.Send(new SendData(FormatCommandOutput(node.Attributes["response"].Value, message.Sender), false, message));
                         }
                     }
 
