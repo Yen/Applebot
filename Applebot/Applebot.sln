@@ -39,6 +39,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blacklist", "Plugins\Blackl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FightanCommand", "Plugins\FightanCommand\FightanCommand.csproj", "{D7CDBE17-2C9A-467F-8BC4-FFD06AFB60B7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModManager", "Plugins\ModManager\ModManager.csproj", "{315F17A8-44A0-4AF2-9F02-368236AD37B3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -173,6 +175,14 @@ Global
 		{D7CDBE17-2C9A-467F-8BC4-FFD06AFB60B7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D7CDBE17-2C9A-467F-8BC4-FFD06AFB60B7}.Release|x86.ActiveCfg = Release|Any CPU
 		{D7CDBE17-2C9A-467F-8BC4-FFD06AFB60B7}.Release|x86.Build.0 = Release|Any CPU
+		{315F17A8-44A0-4AF2-9F02-368236AD37B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{315F17A8-44A0-4AF2-9F02-368236AD37B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{315F17A8-44A0-4AF2-9F02-368236AD37B3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{315F17A8-44A0-4AF2-9F02-368236AD37B3}.Debug|x86.Build.0 = Debug|Any CPU
+		{315F17A8-44A0-4AF2-9F02-368236AD37B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{315F17A8-44A0-4AF2-9F02-368236AD37B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{315F17A8-44A0-4AF2-9F02-368236AD37B3}.Release|x86.ActiveCfg = Release|Any CPU
+		{315F17A8-44A0-4AF2-9F02-368236AD37B3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -193,5 +203,6 @@ Global
 		{9C3D04F0-B2A6-480D-B461-AAC27D5C3D47} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 		{7F9C4A8C-46F1-4CFE-972D-0527794D1E32} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 		{D7CDBE17-2C9A-467F-8BC4-FFD06AFB60B7} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
+		{315F17A8-44A0-4AF2-9F02-368236AD37B3} = {F8F63457-5F8B-4ADD-BC92-47AC1857EAD9}
 	EndGlobalSection
 EndGlobal
