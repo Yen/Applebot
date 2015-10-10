@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace QueueCommand
 {
+    [PlatformRegistrar(typeof(TwitchPlatform.TwitchPlatform))]
     public class QueueCommand : Command
     {
         public List<Tuple<string, string>> Queue = new List<Tuple<string, string>>();

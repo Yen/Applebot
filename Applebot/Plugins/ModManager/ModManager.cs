@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace ModManager
 {
-    [PlatformRegistrar(typeof(TwitchPlatform.TwitchPlatform))]
+    [PlatformRegistrar(typeof(TwitchPlatformSecond.TwitchPlatformSecond))]
     public class ModManager : Command
     {
         string settingsFile = "settings/ModManager.txt";

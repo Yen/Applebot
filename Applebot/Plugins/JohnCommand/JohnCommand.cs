@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace JohnCommand
 {
+    [PlatformRegistrar(typeof(TwitchPlatform.TwitchPlatform))]
     public class JohnCommand : Command
     {
 

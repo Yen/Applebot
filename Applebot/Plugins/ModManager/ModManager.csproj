@@ -48,6 +48,10 @@
       <Project>{e5ed57f8-2652-4de4-a2a9-b6d4c558391c}</Project>
       <Name>ApplebotAPI</Name>
     </ProjectReference>
+    <ProjectReference Include="..\TwitchPlatformSecond\TwitchPlatformSecond.csproj">
+      <Project>{e21dbf4d-a4ae-4a8f-9b93-69198979c01b}</Project>
+      <Name>TwitchPlatformSecond</Name>
+    </ProjectReference>
     <ProjectReference Include="..\TwitchPlatform\TwitchPlatform.csproj">
       <Project>{e5dd6262-b81e-4afc-8644-a9c99a050378}</Project>
       <Name>TwitchPlatform</Name>

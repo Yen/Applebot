@@ -10,6 +10,7 @@ using System.Xml;
 
 namespace SimpleTextCommand
 {
+    [PlatformRegistrar(typeof(TwitchPlatform.TwitchPlatform))]
     public class SimpleTextCommand : Command
     {
         // design stolen from bashtech's GeoBot

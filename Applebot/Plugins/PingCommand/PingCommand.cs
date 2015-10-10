@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace PingCommand
 {
+    [PlatformRegistrar(typeof(TwitchPlatform.TwitchPlatform))]
     public class PingCommand : Command
     {
         public PingCommand() : base("PingCommand")
