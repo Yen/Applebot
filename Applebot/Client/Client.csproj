@@ -76,7 +76,7 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
-    <Content Include="..\Plugins\Blacklist\bin\Debug\Blacklist.dll">
+    <Content Include="..\Plugins\Blacklist\bin\$(Configuration)\Blacklist.dll">
       <Link>Plugins\Blacklist.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -93,11 +93,11 @@
       <Link>Settings\discordsettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\Plugins\FightanCommand\bin\Debug\FightanCommand.dll">
+    <Content Include="..\Plugins\FightanCommand\bin\$(Configuration)\FightanCommand.dll">
       <Link>Plugins\FightanCommand.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\Plugins\JohnCommand\bin\Debug\JohnCommand.dll">
+    <Content Include="..\Plugins\JohnCommand\bin\$(Configuration)\JohnCommand.dll">
       <Link>Plugins\JohnCommand.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -113,7 +113,7 @@
       <Link>Plugins\SimpleTextCommand.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\Plugins\TwitchPlatformSecond\bin\Debug\TwitchPlatformSecond.dll">
+    <Content Include="..\Plugins\TwitchPlatformSecond\bin\$(Configuration)\TwitchPlatformSecond.dll">
       <Link>Plugins\TwitchPlatformSecond.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
