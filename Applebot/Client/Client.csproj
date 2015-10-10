@@ -82,7 +82,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\Plugins\Blacklist\bin\Debug\Blacklist.txt">
+    <Content Include="..\Plugins\Blacklist\Blacklist.txt">
       <Link>Settings\Blacklist.txt</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -111,6 +111,14 @@
     </Content>
     <Content Include="..\Plugins\SimpleTextCommand\bin\$(Configuration)\SimpleTextCommand.dll">
       <Link>Plugins\SimpleTextCommand.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Plugins\TwitchPlatformSecond\bin\Debug\TwitchPlatformSecond.dll">
+      <Link>Plugins\TwitchPlatformSecond.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Plugins\TwitchPlatformSecond\twitchsecondsettings.xml">
+      <Link>Settings\twitchsecondsettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Plugins\TwitchPlatform\bin\$(Configuration)\TwitchPlatform.dll">
