@@ -8,6 +8,8 @@ make\.my
 t\.co\.ua
 qurl\.cc
 l\.ly
+goo\.gl
+t\.co\/
 shortr\.org
 psc-promo\.net
 9nl\.es
@@ -88,3 +90,7 @@ now4pics\.com
 bitly\.com
 smitepromotions\.com
 kaa\.im
+f4f\.in\.ua
+sub_confirmation
+articleseveryday\.com
+articles4read\.com
