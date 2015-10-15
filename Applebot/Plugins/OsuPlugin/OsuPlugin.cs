@@ -16,6 +16,13 @@ namespace OsuPlugin
     public class OsuPlugin : Command
     {
         private string _apiKey;
+        private enum Modes
+        {
+            Standard = 0,
+            Taiko = 1,
+            CtB = 2,
+            Mania = 3
+        }
 
         public OsuPlugin() : base("OsuPlugin")
         {
@@ -103,16 +110,21 @@ namespace OsuPlugin
                     Creator = working["creator"].ToString(),
                     BPM = int.Parse(working["bpm"].ToString()),
                     Source = working["source"].ToString(),
-                    DifficultyRating = float.Parse(working["difficultyrating"].ToString())
+                    DifficultyRating = Math.Round(float.Parse(working["difficultyrating"].ToString()), 2),
+                    Mode = Int32.Parse(working["mode"].ToString()),
+                    Version = working["version"].ToString()
                 };
+
+                string readableMode = Enum.GetName(typeof(Modes), beatmap.Mode);
 
                 switch (parts[1][0])
                 {
                     case 's':
-                        platform.Send(new SendData($"{message.Sender} linked a beatmap set, {beatmap.Title} by {beatmap.Artist}, set contains {json.Count} maps", false, message));
+                        platform.Send(new SendData($"{message.Sender} linked \"{beatmap.Artist} - {beatmap.Title}\" by {beatmap.Creator}", false, message));
                         break;
                     case 'b':
-                        platform.Send(new SendData($"{message.Sender} linked a beatmap, {beatmap.Title} by {beatmap.Artist}, creator: {beatmap.Creator}, bpm: {beatmap.BPM}, difficulty: {beatmap.DifficultyRating}", false, message));
+                        string post = (readableMode == "Mania") ? $"Mania [{beatmap.DifficultySize}K]" : $"{readableMode}";
+                        platform.Send(new SendData($"{message.Sender} linked \"{beatmap.Artist} - {beatmap.Title} [{beatmap.Version}]\" by {beatmap.Creator} - {post}, {beatmap.DifficultyRating}★", false, message));
                         break;
                 }
             }
