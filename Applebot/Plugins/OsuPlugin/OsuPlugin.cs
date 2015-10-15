@@ -111,7 +111,7 @@ namespace OsuPlugin
                     BPM = int.Parse(working["bpm"].ToString()),
                     Source = working["source"].ToString(),
                     DifficultyRating = Math.Round(float.Parse(working["difficultyrating"].ToString()), 2),
-                    Mode = Int32.Parse(working["mode"].ToString()),
+                    Mode = int.Parse(working["mode"].ToString()),
                     Version = working["version"].ToString()
                 };
 
