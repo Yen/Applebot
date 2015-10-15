@@ -101,12 +101,20 @@
       <Link>Plugins\JohnCommand.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\Plugins\ModManager\bin\Debug\ModManager.dll">
+    <Content Include="..\Plugins\ModManager\bin\$(Configuration)\ModManager.dll">
       <Link>Plugins\ModManager.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Plugins\ModManager\ModManager.txt">
       <Link>Settings\ModManager.txt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Plugins\OsuPlugin\bin\$(Configuration)\OsuPlugin.dll">
+      <Link>Plugins\OsuPlugin.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Plugins\OsuPlugin\osuplugin.xml">
+      <Link>Settings\osuplugin.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Plugins\PingCommand\bin\$(Configuration)\PingCommand.dll">
