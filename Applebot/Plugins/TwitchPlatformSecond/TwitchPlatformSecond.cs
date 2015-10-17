@@ -193,7 +193,7 @@ namespace TwitchPlatformSecond
                             {
                                 try
                                 {
-                                    Logger.Log(Logger.Level.PLATFORM, "Updating Twitch moderator list");
+                                    //Logger.Log(Logger.Level.PLATFORM, "Updating Twitch moderator list");
 
                                     XmlDocument doc = new XmlDocument();
                                     using (WebClient client = new WebClient())
@@ -230,7 +230,7 @@ namespace TwitchPlatformSecond
                                     Logger.Log(Logger.Level.ERROR, "Error fetching Twitch moderator list, retrying");
                                 }
                             }
-                            Logger.Log(Logger.Level.PLATFORM, "Twitch moderator list updated");
+                            //Logger.Log(Logger.Level.PLATFORM, "Twitch moderator list updated");
                             _tmiLastUpdate = DateTime.UtcNow;
                         }));
                         _tmiUpdateTask.Start();
