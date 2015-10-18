@@ -24,8 +24,9 @@ namespace OsuPlugin
             Mania = 3
         }
 
-        public OsuPlugin() : base("OsuPlugin")
+        public OsuPlugin() : base("OsuPlugin", TimeSpan.FromSeconds(0))
         {
+
             if (!File.Exists("Settings/osuplugin.xml"))
             {
                 Logger.Log(Logger.Level.ERROR, "Settings file \"{0}\" does not exist", "Settings/osuplugin.xml");

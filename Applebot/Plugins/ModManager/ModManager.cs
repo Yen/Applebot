@@ -19,7 +19,7 @@ namespace ModManager
         string settingsFile = "settings/ModManager.txt";
         List<string> mods = new List<string>();
 
-        public ModManager() : base("ModManager")
+        public ModManager() : base("ModManager", TimeSpan.FromSeconds(0))
         {
             Expressions.Add(new Regex("^!up\\b"));
             Expressions.Add(new Regex("^!down\\b"));

@@ -14,7 +14,7 @@ namespace QueueCommand
         public List<Tuple<string, string>> Queue = new List<Tuple<string, string>>();
         public bool isOpen = false;
 
-        public QueueCommand() : base("QueueCommand")
+        public QueueCommand() : base("QueueCommand", TimeSpan.FromSeconds(0))
         {
             Expressions.Add(new Regex("^!join\\b"));
             Expressions.Add(new Regex("^!next\\b"));
