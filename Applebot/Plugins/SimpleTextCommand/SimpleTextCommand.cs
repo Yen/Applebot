@@ -15,6 +15,7 @@ namespace SimpleTextCommand
     {
         // design stolen from bashtech's GeoBot
         // ACHTUNG!!! SPAGHETTI
+        // I HATE THIS CODE SO MUCH AAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
         private XmlNodeList _patterns;
         private string _configLocation;
@@ -202,6 +203,7 @@ namespace SimpleTextCommand
         public override void HandleMessage<T1, T2>(T1 message, T2 platform)
         {
             string[] parts = message.Content.Split(' ');
+            bool elevated = platform.CheckElevatedStatus(message);
 
             if (parts[0] == "!command" || parts[0] == "!autoreply")
             {
@@ -209,8 +211,7 @@ namespace SimpleTextCommand
                 string syntaxHelp = parts[0];
                 string feedbackHelp = isComplex ? "autoreply" : "command";
                 string feedbackPlural = isComplex ? "autoreplies" : "commands";
-                string feedbackCaps = isComplex ? "Autoreply" : "Command";
-                bool elevated = platform.CheckElevatedStatus(message);
+                string feedbackCaps = isComplex ? "Autoreply" : "Command";               
 
                 if (!elevated)
                 {
@@ -321,28 +322,29 @@ namespace SimpleTextCommand
                 }
 
             }
-
             lock (_patterns)
             {
                 foreach (XmlNode node in _patterns)
                 {
                     string trigger = node.Attributes["trigger"].Value;
                     string type = node.Attributes["type"].Value;
+                    string target = message.Sender;
+                    if (parts.Length > 1 && elevated) { target = parts[1]; }
 
                     if (type == "regex")
                     {
                         Regex r = new Regex(trigger);
                         if (r.IsMatch(message.Content))
                         {
-                            platform.Send(new SendData(FormatCommandOutput(node.Attributes["response"].Value, message.Sender), false, message));
+                            platform.Send(new SendData(FormatCommandOutput(node.Attributes["response"].Value, target), false, message));
                         }
                     }
 
                     if (type == "text")
                     {
-                        if (trigger == message.Content.Substring(1))
+                        if (trigger == parts[0].Substring(1))
                         {
-                            platform.Send(new SendData(FormatCommandOutput(node.Attributes["response"].Value, message.Sender), false, message));
+                            platform.Send(new SendData(FormatCommandOutput(node.Attributes["response"].Value, target), false, message));
                         }
                     }
 
