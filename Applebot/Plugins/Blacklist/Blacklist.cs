@@ -78,7 +78,10 @@ namespace Blacklist
             foreach (var regex in Expressions.Skip(fixedTriggers))
             {
                 if (regex.Match(message.Content).Success)
+                {
                     triggered = true;
+                    break;
+                }
             }
 
             if (!platform.CheckElevatedStatus(message) && triggered)
