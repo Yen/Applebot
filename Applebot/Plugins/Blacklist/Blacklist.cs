@@ -14,10 +14,13 @@ namespace Blacklist
     public class Blacklist : Command
     {
         string settingsFile = "settings/Blacklist.txt";
+        List<string> permittedUsers = new List<string>();
+        int fixedTriggers = 2;
 
-        public Blacklist() : base("Blacklist")
+        public Blacklist() : base("Blacklist", TimeSpan.FromSeconds(0))
         {
             Expressions.Add(new Regex("^!blacklist\\b"));
+            Expressions.Add(new Regex("^!permit\\b"));
             bool success = Reload();
             if (!success)
                 Logger.Log(Logger.Level.WARNING, "Blacklist couldn't be loaded! File should be in " + settingsFile);
@@ -29,8 +32,8 @@ namespace Blacklist
             {
                 using (StreamReader reader = new StreamReader(settingsFile))
                 {
-                    if (Expressions.Count > 1) // this is kind of an ugly place for this to be, but leaving it outside the block is ugly from a functionality standpoint, handle later?
-                        Expressions.RemoveRange(1, Expressions.Count - 1);
+                    if (Expressions.Count > fixedTriggers) // this is kind of an ugly place for this to be, but leaving it outside the block is ugly from a functionality standpoint, handle later?
+                        Expressions.RemoveRange(fixedTriggers, Expressions.Count - fixedTriggers);
                     string line;
                     while ((line = reader.ReadLine()) != null)
                     {
@@ -49,6 +52,7 @@ namespace Blacklist
         public override void HandleMessage<T1, T2>(T1 message, T2 platform)
         {
             string[] parts = message.Content.Split(' ');
+
             if (parts[0] == "!blacklist" && parts.Length > 1 && platform.CheckElevatedStatus(message))
             {
                 switch (parts[1])
@@ -60,12 +64,36 @@ namespace Blacklist
                 }
             }
 
-
-
-            if (!platform.CheckElevatedStatus(message))
+            if (parts[0] == "!permit" && parts.Length > 1 && platform.CheckElevatedStatus(message))
             {
-                Thread.Sleep(250);
-                platform.Send(new SendData(String.Format(".timeout {0} 1", message.Sender), false, message));
+                permittedUsers.Add(parts[1].ToLower());
+                platform.Send(new SendData($"Permitted {parts[1]}. Their next blacklisted message will be allowed.", false, message));
+            }
+
+            // have to recheck here to handle edge case of "non-elevated user attempts to use administrative command", they get purged otherwise (not the WORST behavior but not gr9) 
+            // this is kinda ugly, maybe core should pass the index of the expression that triggers the command so rechecks like this aren't necessary?
+            // honestly "amalgamate" commands are kind of a mess tho
+
+            bool triggered = false;
+            foreach (var regex in Expressions.Skip(fixedTriggers))
+            {
+                if (regex.Match(message.Content).Success)
+                    triggered = true;
+            }
+
+            if (!platform.CheckElevatedStatus(message) && triggered)
+            {
+                if (permittedUsers.Contains(message.Sender))
+                {
+                    permittedUsers.Remove(message.Sender);
+                }
+                else
+                {
+
+                    Thread.Sleep(250);
+                    platform.Send(new SendData(String.Format(".timeout {0} 1", message.Sender), false, message));
+                }
+
             }
         }
     }
