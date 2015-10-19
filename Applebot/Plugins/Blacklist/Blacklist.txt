@@ -1,4 +1,5 @@
 ﻿tinyurl\.com
+bit\.ly
 j\.mp
 kaa\.im
 img4pic\.com
