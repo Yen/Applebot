@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Applebot</title>
+    <script>
+        var beep;
+
+        window.onload = function () {
+            var ws = new WebSocket("ws://localhost:" + location.port);
+
+            ws.onmessage = function (event) {
+                alert(event.data);
+            }
+
+            ws.onopen = function (event) {
+                ws.send("OPEN");
+            }
+
+            beep = function () {
+                ws.send("BEEP");
+            }
+        }
+    </script>
+</head>
+<body>
+    <button onclick="beep()">Beep</button>
+</body>
+</html>

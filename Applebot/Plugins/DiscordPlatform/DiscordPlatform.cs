@@ -432,29 +432,29 @@ namespace DiscordPlatform
                         break;
                     }
                 case "PRESENCE_UPDATE": // seemed to change, no idea what this does now
-                    //{
-                    //    var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
+                                        //{
+                                        //    var guilds = _guilds.Where(a => a.ID == data["d"]["guild_id"].ToString());
 
-                    //    if (guilds.Count() == 1)
-                    //    {
-                    //        var members = guilds.First().Members.Where(a => a.ID == data["d"]["user"]["id"].ToString());
+                //    if (guilds.Count() == 1)
+                //    {
+                //        var members = guilds.First().Members.Where(a => a.ID == data["d"]["user"]["id"].ToString());
 
-                    //        if (members.Count() == 0)
-                    //        {
-                    //            Member member = new Member();
-                    //            member.ID = data["d"]["user"]["id"].ToString();
-                    //            member.User = data["d"]["user"]["username"].ToString();
+                //        if (members.Count() == 0)
+                //        {
+                //            Member member = new Member();
+                //            member.ID = data["d"]["user"]["id"].ToString();
+                //            member.User = data["d"]["user"]["username"].ToString();
 
-                    //            guilds.First().Members.Add(member);
-                    //        }
-                    //        else if (members.Count() == 1)
-                    //        {
-                    //            members.First().User = data["d"]["user"]["username"].ToString();
-                    //        }
-                    //    }
+                //            guilds.First().Members.Add(member);
+                //        }
+                //        else if (members.Count() == 1)
+                //        {
+                //            members.First().User = data["d"]["user"]["username"].ToString();
+                //        }
+                //    }
 
-                    //    break;
-                    //}
+                //    break;
+                //}
                 case "TYPING_START":
                 case "MESSAGE_ACK": // possibly something to do with the unread messages prompts in the client, not needed
                 case "VOICE_STATE_UPDATE":
