@@ -232,7 +232,7 @@ namespace DiscordPlatform
 
                 Logger.Log(Logger.Level.PLATFORM, "Attempting connection to Discord websocket hub server");
 
-                _socket.ConnectAsync(new Uri("wss://gateway-arthas.discord.gg"), CancellationToken.None).Wait();
+                _socket.ConnectAsync(new Uri("wss://gateway-fafnir.discord.gg"), CancellationToken.None).Wait();
             }
 
             string connectionData = CreateConnectionData(_token);

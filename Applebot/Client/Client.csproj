@@ -99,6 +99,7 @@
     </Content>
     <Content Include="..\Plugins\DiscordPlatform\bin\$(Configuration)\DiscordPlatform.dll">
       <Link>Plugins\DiscordPlatform.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Plugins\DiscordPlatform\discordsettings.xml">
       <Link>Settings\discordsettings.xml</Link>

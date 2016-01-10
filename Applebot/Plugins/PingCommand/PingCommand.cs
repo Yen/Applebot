@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace PingCommand
 {
     [PlatformRegistrar(typeof(TwitchPlatform.TwitchPlatform))]
+    [PlatformRegistrar(typeof(DiscordPlatform.DiscordPlatform))]
     public class PingCommand : Command
     {
         public PingCommand() : base("PingCommand")
