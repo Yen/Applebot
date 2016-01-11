@@ -81,6 +81,7 @@ namespace DiscordPlatform
         ClientWebSocket _socket;
         NameValueCollection _loginData;
         string _token;
+        string _selfID;
         object _connectionLock = new object();
 
         SynchronizedCollection<Guild> _guilds = new SynchronizedCollection<Guild>();
@@ -294,6 +295,8 @@ namespace DiscordPlatform
                             Logger.Log(Logger.Level.PLATFORM, $"Discord keep alive task, id ({id}), terminated");
                         });
 
+                        _selfID = data["d"]["user"]["id"].ToString();
+
                         foreach (var guild_ in data["d"]["guilds"])
                         {
                             Guild guild = new Guild();
@@ -358,6 +361,8 @@ namespace DiscordPlatform
                         string userID = data["d"]["author"]["id"].ToString();
                         string channelID = data["d"]["channel_id"].ToString();
                         string id = data["d"]["id"].ToString();
+
+                        if (userID == _selfID) break;
 
                         ProcessMessage(this, new DiscordMessage(user, content, userID, channelID, id));
                         break;
