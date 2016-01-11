@@ -594,7 +594,7 @@ namespace DiscordPlatform
 
             foreach (var role in roles)
             {
-                if ((role.Permissions & BitwiseElevatedPermission) == BitwiseElevatedPermission)
+                if (role.Name == "AppleBot Operator")
                     return true;
             }
 
