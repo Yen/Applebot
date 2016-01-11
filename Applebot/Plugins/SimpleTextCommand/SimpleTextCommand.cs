@@ -338,6 +338,7 @@ namespace SimpleTextCommand
                         if (r.IsMatch(message.Content))
                         {
                             platform.Send(new SendData(FormatCommandOutput(node.Attributes["response"].Value, target), false, message));
+                            break;
                         }
                     }
 
@@ -346,6 +347,7 @@ namespace SimpleTextCommand
                         if (trigger == parts[0].Substring(1))
                         {
                             platform.Send(new SendData(FormatCommandOutput(node.Attributes["response"].Value, target), false, message));
+                            break;
                         }
                     }
 
