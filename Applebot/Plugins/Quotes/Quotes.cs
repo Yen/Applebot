@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 namespace PingCommand
 {
     [PlatformRegistrar(typeof(TwitchPlatform.TwitchPlatform))]
+    [PlatformRegistrar(typeof(DiscordPlatform.DiscordPlatform))]
     public class Quotes : Command
     {
         // TODO: literally any kind of thread safety
