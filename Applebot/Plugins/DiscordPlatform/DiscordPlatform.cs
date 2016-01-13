@@ -139,9 +139,9 @@ namespace DiscordPlatform
                     return json["token"].ToString();
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                Logger.Log(Logger.Level.ERROR, "Error getting Discord auth token, retrying");
+                Logger.Log(Logger.Level.ERROR, "Error getting Discord auth token, retrying/" + ex.ToString());
                 Thread.Sleep(TimeSpan.FromSeconds(1)); //Just stops spam if the server is offline or something
                 return GetLoginToken();
             }
@@ -239,15 +239,15 @@ namespace DiscordPlatform
                 webRequest.UserAgent = "Mozilla/5.0 (Windows NT 5.1; rv:28.0) Gecko/20100101 Firefox/28.0";
                 webRequest.Headers.Add("Authorization", _token);
                 var webResponse = (HttpWebResponse)webRequest.GetResponse();
-                string fuck;
+                string result;
                 using (StreamReader reader = new StreamReader(webResponse.GetResponseStream()))
                 {
                     string s = reader.ReadToEnd();
                     reader.Close();
-                    fuck = s;
+                    result = s;
                 }
 
-                JToken json = JToken.Parse(fuck);
+                JToken json = JToken.Parse(result);
                 string url = json["url"].ToString();
 
                 Logger.Log(Logger.Level.PLATFORM, "Connecting to " + url);
@@ -372,6 +372,7 @@ namespace DiscordPlatform
                             _guilds.Add(guild);
 
                         }
+                        SetGame("VIDEOJUEGOS");
                         return true;
                     }
                 case "MESSAGE_CREATE":
@@ -548,7 +549,7 @@ namespace DiscordPlatform
             JObject content = new JObject();
             content.Add("content", data.Content);
 
-            HttpWebRequest request = WebRequest.CreateHttp(string.Format(@"http://discordapp.com/api/channels/{0}/messages", (data.Origin as DiscordMessage).ChannelID));
+            HttpWebRequest request = WebRequest.CreateHttp(string.Format(@"https://discordapp.com/api/channels/{0}/messages", (data.Origin as DiscordMessage).ChannelID));
             request.Method = "POST";
             request.ContentType = "application/json";
             request.Headers.Add("authorization", _token);
@@ -562,9 +563,9 @@ namespace DiscordPlatform
             {
                 request.GetResponse().Close();
             }
-            catch
+            catch (Exception ex)
             {
-                Logger.Log(Logger.Level.ERROR, "Error sending message to Discord");
+                Logger.Log(Logger.Level.ERROR, "Error sending message to Discord/" + ex.ToString());
                 Reconnect();
                 Send(data);
             }
