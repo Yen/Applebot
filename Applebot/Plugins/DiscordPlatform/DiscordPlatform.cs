@@ -372,7 +372,6 @@ namespace DiscordPlatform
                             _guilds.Add(guild);
 
                         }
-                        SetGame("VIDEOJUEGOS");
                         return true;
                     }
                 case "MESSAGE_CREATE":
