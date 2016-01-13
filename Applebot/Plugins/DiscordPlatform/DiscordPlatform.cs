@@ -133,7 +133,7 @@ namespace DiscordPlatform
             {
                 using (WebClient client = new WebClient())
                 {
-                    byte[] buffer = client.UploadValues("http://discordapp.com/api/auth/login", _loginData);
+                    byte[] buffer = client.UploadValues("https://discordapp.com/api/auth/login", _loginData);
 
                     JToken json = JToken.Parse(Encoding.UTF8.GetString(buffer));
                     return json["token"].ToString();
@@ -233,7 +233,26 @@ namespace DiscordPlatform
 
                 Logger.Log(Logger.Level.PLATFORM, "Attempting connection to Discord websocket hub server");
 
-                _socket.ConnectAsync(new Uri("wss://gateway-fafnir.discord.gg"), CancellationToken.None).Wait();
+                var webRequest = (HttpWebRequest)WebRequest.Create("https://discordapp.com/api/gateway");
+                webRequest.Method = "GET";
+                webRequest.ContentType = "application/json";
+                webRequest.UserAgent = "Mozilla/5.0 (Windows NT 5.1; rv:28.0) Gecko/20100101 Firefox/28.0";
+                webRequest.Headers.Add("Authorization", _token);
+                var webResponse = (HttpWebResponse)webRequest.GetResponse();
+                string fuck;
+                using (StreamReader reader = new StreamReader(webResponse.GetResponseStream()))
+                {
+                    string s = reader.ReadToEnd();
+                    reader.Close();
+                    fuck = s;
+                }
+
+                JToken json = JToken.Parse(fuck);
+                string url = json["url"].ToString();
+
+                Logger.Log(Logger.Level.PLATFORM, "Connecting to " + url);
+
+                _socket.ConnectAsync(new Uri(url), CancellationToken.None).Wait();
             }
 
             string connectionData = CreateConnectionData(_token);
@@ -351,6 +370,7 @@ namespace DiscordPlatform
                             }
 
                             _guilds.Add(guild);
+
                         }
                         return true;
                     }
