@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <settings>
-  <email>google@gmail.com</email>
-  <pass>pass</pass>
+  <email>username@domain.com</email>
+  <pass>p4ssw0rd</pass>
+  <owner>00000000000000000</owner>
 </settings>
