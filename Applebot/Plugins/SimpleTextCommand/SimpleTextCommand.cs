@@ -67,8 +67,6 @@ namespace SimpleTextCommand
                     Expressions.Add(new Regex(trigger));
                 }
 
-                Logger.Log(Logger.Level.APPLICATION, "SimpleTextCommand: Added pattern \"" + trigger + "\"");
-
             }
         }
 
