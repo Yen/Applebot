@@ -88,6 +88,10 @@ namespace DiscordPlatform
         SynchronizedCollection<Guild> _guilds = new SynchronizedCollection<Guild>();
         int _taskID = 0;
 
+        private Queue<TimeSpan> _seconds = new Queue<TimeSpan>();
+        private DateTime _startingTime = DateTime.UtcNow;
+        private Object _rateLock = new Object();
+
         public DiscordPlatform()
         {
             if (!File.Exists("Settings/discordsettings.xml"))
@@ -145,9 +149,17 @@ namespace DiscordPlatform
                     return json["token"].ToString();
                 }
             }
-            catch (Exception ex)
+            catch (WebException ex)
             {
-                Logger.Log(Logger.Level.ERROR, "Error getting Discord auth token, retrying/" + ex.ToString());
+                string errorCode = ((HttpWebResponse)ex.Response).StatusCode.ToString();
+                Logger.Log(Logger.Level.ERROR, "Error logging in to Discord: " + errorCode);      
+
+                if (errorCode == "429")
+                {
+                    Logger.Log(Logger.Level.ERROR, "Ratelimited, waiting to avoid login loop...");
+                    Thread.Sleep(TimeSpan.FromSeconds(30));
+                }
+
                 Thread.Sleep(TimeSpan.FromSeconds(1)); //Just stops spam if the server is offline or something
                 return GetLoginToken();
             }
@@ -571,28 +583,57 @@ namespace DiscordPlatform
                 return;
             }
 
-            JObject content = new JObject();
-            content.Add("content", data.Content);
-
-            HttpWebRequest request = WebRequest.CreateHttp(string.Format(@"https://discordapp.com/api/channels/{0}/messages", (data.Origin as DiscordMessage).ChannelID));
-            request.Method = "POST";
-            request.ContentType = "application/json";
-            request.Headers.Add("authorization", _token);
-
-            StreamWriter requestWriter = new StreamWriter(request.GetRequestStream());
-            requestWriter.Write(content.ToString());
-            requestWriter.Flush();
-            requestWriter.Close();
-
-            try
+            lock (_rateLock)
             {
-                request.GetResponse().Close();
-            }
-            catch (Exception ex)
-            {
-                Logger.Log(Logger.Level.ERROR, "Error sending message to Discord/" + ex.ToString());
-                Reconnect();
-                Send(data);
+                // TODO: This seems to work just fine but I feel like there is a way to produce a smoother buffer
+                _seconds.Enqueue(DateTime.UtcNow - _startingTime);
+
+                while (_seconds.Count > 30)
+                {
+                    while (_seconds.First() < (DateTime.UtcNow - _startingTime) - TimeSpan.FromSeconds(15))
+                    {
+                        _seconds.Dequeue();
+                        Logger.Log(Logger.Level.DEBUG, "dequeue");
+                    }
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                    Logger.Log(Logger.Level.DEBUG, "ratelimit");
+                }
+
+                JObject content = new JObject();
+                content.Add("content", data.Content);
+
+                HttpWebRequest request = WebRequest.CreateHttp(string.Format(@"https://discordapp.com/api/channels/{0}/messages", (data.Origin as DiscordMessage).ChannelID));
+                request.Method = "POST";
+                request.ContentType = "application/json";
+                request.Headers.Add("authorization", _token);
+
+                StreamWriter requestWriter = new StreamWriter(request.GetRequestStream());
+                requestWriter.Write(content.ToString());
+                requestWriter.Flush();
+                requestWriter.Close();
+
+                try
+                {
+                    request.GetResponse().Close();
+                }
+                catch (WebException ex)
+                {
+                    string errorCode = ((HttpWebResponse)ex.Response).StatusCode.ToString();
+                    Logger.Log(Logger.Level.ERROR, "Error sending message to Discord: " + errorCode);
+
+                    if (errorCode == "429")
+                    {
+                        Logger.Log(Logger.Level.ERROR, "Ratelimited, waiting to avoid complete failure...");
+                        Thread.Sleep(TimeSpan.FromSeconds(30));
+                        Logger.Log(Logger.Level.ERROR, "Attempting resend...");
+                        Send(data);
+                    }
+                    else
+                    {
+                        Reconnect();
+                        Send(data);
+                    }
+                }
             }
         }
 
