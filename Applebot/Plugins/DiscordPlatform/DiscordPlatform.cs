@@ -83,6 +83,7 @@ namespace DiscordPlatform
         string _token;
         string _selfID;
         object _connectionLock = new object();
+        string _owner;
 
         SynchronizedCollection<Guild> _guilds = new SynchronizedCollection<Guild>();
         int _taskID = 0;
@@ -109,6 +110,7 @@ namespace DiscordPlatform
 
             var emailBuf = doc.SelectSingleNode("settings/email");
             var passBuf = doc.SelectSingleNode("settings/pass");
+            var ownerBuf = doc.SelectSingleNode("settings/owner");
 
             if ((emailBuf == null) || (passBuf == null))
             {
@@ -117,12 +119,16 @@ namespace DiscordPlatform
                 return;
             }
 
+            _owner = ownerBuf.InnerXml;
+
             string email = emailBuf.InnerXml;
             string pass = passBuf.InnerXml;
 
             _loginData = new NameValueCollection();
             _loginData.Add("email", email);
             _loginData.Add("password", pass);
+
+
         }
 
         private string GetLoginToken()
@@ -169,6 +175,26 @@ namespace DiscordPlatform
             result.Add("d", d);
 
             return result.ToString();
+        }
+
+        public void SetGame(string targetGame)
+        {
+            JObject result = new JObject();
+
+            result.Add("op", 3);
+
+            JObject d = new JObject();
+            d.Add("token", _token);
+            d.Add("idle_since", null);
+
+            JObject game = new JObject();
+            game.Add("name", targetGame);
+
+            d.Add("game", game);
+
+            result.Add("d", d);
+
+            SendString(result.ToString());
         }
 
         private JObject RecieveDiscord()
@@ -587,6 +613,11 @@ namespace DiscordPlatform
                 return false;
 
             if (guild.First().OwnerID == userID)
+            {
+                return true;
+            }
+
+            if (userID == _owner)
             {
                 return true;
             }
