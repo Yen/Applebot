@@ -228,18 +228,24 @@ namespace SimpleTextCommand
                 {
                     List<String[]> cmdlist = BuildCommandList(isComplex);
 
+                    string listOutput = "";
+
                     foreach (string[] cmd in cmdlist)
                     {
 
                         int index = cmdlist.IndexOf(cmd) + 1;
                         string trigger = cmd[0];
 
-                        platform.Send(new SendData(index + ": " + trigger, false, message));
+                        listOutput += index + ": " + trigger + " | ";
                     }
 
                     if (cmdlist.Count == 0)
                     {
                         platform.Send(new SendData("There are no " + feedbackPlural + ". Try adding one with \"" + syntaxHelp + " add\"?", false, message));
+                    } else
+                    {
+                        Logger.Log(Logger.Level.DEBUG, listOutput);
+                        platform.Send(new SendData(listOutput.Substring(0, listOutput.Length - 3), false, message));
                     }
 
                 }
