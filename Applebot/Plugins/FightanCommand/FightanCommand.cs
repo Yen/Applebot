@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace FightanCommand
 {
     [PlatformRegistrar(typeof(TwitchPlatform.TwitchPlatform))]
+    [PlatformRegistrar(typeof(DiscordPlatform.DiscordPlatform))]
     public class FightanCommand : Command
     {
         // list of Quality Fighting Games provided by @DudewitdaK
