@@ -420,7 +420,7 @@ namespace DiscordPlatform
                         string channelID = data["d"]["channel_id"].ToString();
                         string id = data["d"]["id"].ToString();
 
-                        if (userID == _selfID) break;
+                        if (userID != _owner && userID == _selfID) break;
 
                         ProcessMessage(this, new DiscordMessage(user, content, userID, channelID, id));
                         break;
