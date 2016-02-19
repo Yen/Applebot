@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Client</RootNamespace>
     <AssemblyName>Client</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <PublishUrl>publish\</PublishUrl>
@@ -27,6 +27,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -182,6 +183,70 @@
     <ProjectReference Include="..\ApplebotAPI\ApplebotAPI.csproj">
       <Project>{e5ed57f8-2652-4de4-a2a9-b6d4c558391c}</Project>
       <Name>ApplebotAPI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\Blacklist\Blacklist.csproj">
+      <Project>{7f9c4a8c-46f1-4cfe-972d-0527794d1e32}</Project>
+      <Name>Blacklist</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\DiscordGameSpoofer\DiscordGameSpoofer.csproj">
+      <Project>{46fe132a-cf68-4526-af17-f07821b3744f}</Project>
+      <Name>DiscordGameSpoofer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\DiscordPlatform\DiscordPlatform.csproj">
+      <Project>{07d35897-1764-4536-b664-933f1a1dd656}</Project>
+      <Name>DiscordPlatform</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\FightanCommand\FightanCommand.csproj">
+      <Project>{d7cdbe17-2c9a-467f-8bc4-ffd06afb60b7}</Project>
+      <Name>FightanCommand</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\JohnCommand\JohnCommand.csproj">
+      <Project>{9c3d04f0-b2a6-480d-b461-aac27d5c3d47}</Project>
+      <Name>JohnCommand</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\ModManager\ModManager.csproj">
+      <Project>{315f17a8-44a0-4af2-9f02-368236ad37b3}</Project>
+      <Name>ModManager</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\OsuPlugin\OsuPlugin.csproj">
+      <Project>{eb8c049f-e0a4-41c7-b0bd-aaeff8e97638}</Project>
+      <Name>OsuPlugin</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\PingCommand\PingCommand.csproj">
+      <Project>{35e414ac-211d-4645-a11a-a62c8f80c82d}</Project>
+      <Name>PingCommand</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\QueueCommand\QueueCommand.csproj">
+      <Project>{a0058276-69f9-4c58-b408-d205887fc464}</Project>
+      <Name>QueueCommand</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\Quotes\Quotes.csproj">
+      <Project>{94583e14-b8dc-4fea-8169-8458287986e2}</Project>
+      <Name>Quotes</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\SimpleTextCommand\SimpleTextCommand.csproj">
+      <Project>{233099a5-68d6-408e-80d8-646f61745437}</Project>
+      <Name>SimpleTextCommand</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\StreamInfo\StreamInfo.csproj">
+      <Project>{6ba37335-dbbf-4a7c-a07d-6b2e3410b612}</Project>
+      <Name>StreamInfo</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\TwitchPlatformSecond\TwitchPlatformSecond.csproj">
+      <Project>{e21dbf4d-a4ae-4a8f-9b93-69198979c01b}</Project>
+      <Name>TwitchPlatformSecond</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\TwitchPlatform\TwitchPlatform.csproj">
+      <Project>{e5dd6262-b81e-4afc-8644-a9c99a050378}</Project>
+      <Name>TwitchPlatform</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\UptimeCommand\UptimeCommand.csproj">
+      <Project>{8cdcb9db-51fc-464d-a4fb-9baf14337ed5}</Project>
+      <Name>UptimeCommand</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\YoutubeParser\YoutubeParser.csproj">
+      <Project>{e6f05c9b-a4c0-49c1-bcf8-a51630a31d7b}</Project>
+      <Name>YoutubeParser</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

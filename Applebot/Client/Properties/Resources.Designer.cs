@@ -67,11 +67,21 @@ namespace Client.Properties {
         ///&lt;head&gt;
         ///    &lt;meta charset=&quot;utf-8&quot; /&gt;
         ///    &lt;title&gt;Applebot&lt;/title&gt;
-        ///&lt;/head&gt;
-        ///&lt;body&gt;
-        ///    &lt;h1&gt;Kappa&lt;/h1&gt;
-        ///&lt;/body&gt;
-        ///&lt;/html&gt;.
+        ///    &lt;script&gt;
+        ///        var beep;
+        ///
+        ///        window.onload = function () {
+        ///            var ws = new WebSocket(&quot;ws://localhost:&quot; + location.port);
+        ///
+        ///            ws.onmessage = function (event) {
+        ///                alert(event.data);
+        ///            }
+        ///
+        ///            ws.onopen = function (event) {
+        ///                ws.send(&quot;OPEN&quot;);
+        ///            }
+        ///
+        ///            beep = function  [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string index {
             get {
