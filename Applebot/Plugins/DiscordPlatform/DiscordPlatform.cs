@@ -152,7 +152,7 @@ namespace DiscordPlatform
             catch (WebException ex)
             {
                 string errorCode = ((HttpWebResponse)ex.Response).StatusCode.ToString();
-                Logger.Log(Logger.Level.ERROR, "Error logging in to Discord: " + errorCode);      
+                Logger.Log(Logger.Level.ERROR, "Error logging in to Discord: " + errorCode);
 
                 if (errorCode == "429")
                 {
@@ -628,7 +628,10 @@ namespace DiscordPlatform
                         Logger.Log(Logger.Level.ERROR, "Attempting resend...");
                         Send(data);
                     }
-                    else
+                    else if (errorCode == "Forbidden")
+                    {
+                        Logger.Log(Logger.Level.ERROR, "Permission error");
+                    } else
                     {
                         Reconnect();
                         Send(data);
