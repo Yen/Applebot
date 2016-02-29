@@ -88,7 +88,7 @@ namespace PingCommand
                     return;
                 }
 
-                if (!elevated) { return; }
+                if (!elevated) { parts[1] = "<negated>"; }
 
                 switch (parts[1])
                 {
@@ -132,7 +132,7 @@ namespace PingCommand
                             index = index - 1;
                             if (quotes.ElementAtOrDefault(index) != null)
                             {
-                                platform.Send(new SendData($"#{index + 1}: {quotes[index]}", false, message));
+                                platform.Send(new SendData($"(#{index + 1}) {quotes[index]}", false, message));
                                 break;
                             }
                         }
