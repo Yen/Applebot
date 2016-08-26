@@ -1,0 +1,16 @@
+﻿{
+    "bot_account": {
+        "username": "notzogzer",
+        "oauth": "oauth:"
+    },
+    "owner_accounts": [
+        {
+            "username": "zogzer",
+            "oauth": "oauth:"
+        }
+    ],
+    "channels": [
+        "zogzer",
+        "cirno_tv"
+    ]
+}
