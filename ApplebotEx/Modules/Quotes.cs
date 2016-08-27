@@ -10,16 +10,16 @@ namespace ApplebotEx.Modules
 {
     public class Quotes : ResourceDependentService<List<Quotes.Quote>>
     {
-        private Random random = new Random();
+        private Random _Random = new Random();
 
-        private int lastIndex = -1;
+        private int _LastIndex = -1;
 
         public class Quote
         {
             [JsonProperty("response")]
             public string Response;
 
-            [JsonProperty("addedBy")]
+            [JsonProperty("added_by")]
             public string AddedBy;
         };
 
@@ -32,39 +32,41 @@ namespace ApplebotEx.Modules
                 (service as IChatMessageHost).ReceiveMessage += _HandleMessage;
         }
 
-        public string RandomQuote() {
-            Console.WriteLine("Pulling random quote");
-            int index = random.Next(Resource.Count());
-            if (Resource.Count() > 1) {
-                while (index == lastIndex)
-                    index = random.Next(Resource.Count);
+        private string _RandomQuote()
+        {
+            int index = _Random.Next(Resource.Count());
+            if (Resource.Count() > 1)
+            {
+                while (index == _LastIndex)
+                    index = _Random.Next(Resource.Count);
             }
             return $"(#{index + 1}) {Resource[index].Response}";
         }
 
         private void _HandleMessage(IChatMessageHost host, object metadata, string user, string message)
         {
-            try {
             // input commands check
             if (Regex.Match(message, @"^!quote\b", RegexOptions.IgnoreCase).Success)
             {
-                var permissionsHost = host as IBotPermissions;      
-                bool elevated = (permissionsHost == null || !permissionsHost.HasBotPermissions(metadata)) ? false : true;
+                var permissionsHost = host as IBotPermissions;
+                bool elevated = permissionsHost?.HasBotPermissions(metadata) ?? false;
 
                 var parts = message.Split(new char[0], StringSplitOptions.RemoveEmptyEntries);
 
                 if (parts.Length < 2)
                 {
-                    Console.WriteLine(Resource.Count());
-                    if (Resource.Count == 0) {host.SendMessage(metadata, "There are no quotes!"); return;}
-                    host.SendMessage(metadata, RandomQuote());
+                    if (Resource.Count == 0)
+                        host.SendMessage(metadata, "There are no quotes!");
+                    else
+                        host.SendMessage(metadata, _RandomQuote());
                     return;
                 }
 
                 switch (parts[1].ToLower())
                 {
                     case "reload":
-                        if (!elevated) {return;}
+                        if (!elevated)
+                            return;
                         lock (ResourceLock)
                         {
                             ReloadResource();
@@ -72,11 +74,16 @@ namespace ApplebotEx.Modules
                         }
                         return;
                     case "add":
-                        if (!elevated) {return;}
-                        if (parts.Length < 3) { host.SendMessage(metadata, "Usage: !quote add <quote>"); return; }
+                        if (!elevated)
+                            return;
+                        if (parts.Length < 3)
+                        {
+                            host.SendMessage(metadata, "Usage: !quote add <quote>");
+                            return;
+                        }
                         lock (ResourceLock)
                         {
-                            var quote = new Quote {Response = _RemoveParts(message, 2), AddedBy = user};
+                            var quote = new Quote { Response = _RemoveParts(message, 2), AddedBy = user };
                             Resource.Add(quote);
                             SaveResource();
 
@@ -84,44 +91,65 @@ namespace ApplebotEx.Modules
                         }
                         return;
                     case "remove":
-                        if (!elevated) {return;}
-                        if (parts.Length < 3) { host.SendMessage(metadata, "Usage: !quote remove <index>"); return; }
+                        if (!elevated)
+                            return;
+                        if (parts.Length < 3)
+                        {
+                            host.SendMessage(metadata, "Usage: !quote remove <index>");
+                            return;
+                        }
                         lock (ResourceLock)
                         {
                             int target;
                             if (int.TryParse(parts[2], out target))
                             {
                                 target = target - 1;
-                                if (Resource.ElementAtOrDefault(target) == null) { host.SendMessage(metadata, $"That quote doesn't exist! :v"); return; }
-
-                                Resource.RemoveAt(target); SaveResource();
-                                host.SendMessage(metadata, $"Removed quote #{target + 1}."); return;
+                                if (Resource.ElementAtOrDefault(target) == null)
+                                {
+                                    host.SendMessage(metadata, $"That quote doesn't exist! :v");
+                                    return;
+                                }
+                                Resource.RemoveAt(target);
+                                SaveResource();
+                                host.SendMessage(metadata, $"Removed quote #{target + 1}.");
                             }
                             else
                             {
-                                host.SendMessage(metadata, "Usage: !quote remove <index>"); return;
+                                host.SendMessage(metadata, "Usage: !quote remove <index>");
                             }
+                            return;
                         }
                     case "undo":
-                        if (!elevated) {return;}
-                        if (Resource.Count < 1) {host.SendMessage(metadata, "No quotes to remove!"); return;}
+                        if (!elevated)
+                            return;
+                        if (Resource.Count < 1)
+                        {
+                            host.SendMessage(metadata, "No quotes to remove!");
+                            return;
+                        }
                         lock (ResourceLock)
                         {
-                            Resource.RemoveAt(Resource.Count - 1); SaveResource();
+                            Resource.RemoveAt(Resource.Count - 1);
+                            SaveResource();
                             host.SendMessage(metadata, $"Removed last quote (#{Resource.Count + 1}).");
                         }
                         return;
                     case "count":
-                        if (Resource.Count == 0) {host.SendMessage(metadata, "There are no saved quotes.");}
-                        string pluralPrefix = Resource.Count == 1 ? "is" : "are";
-                        string pluralSuffix = Resource.Count == 1 ? "quote" : "quotes";
-                        host.SendMessage(metadata, $"There {pluralPrefix} {Resource.Count} saved {pluralSuffix}.");
+                        if (Resource.Count == 0)
+                            host.SendMessage(metadata, "There are no saved quotes.");
+                        else
+                        {
+                            string pluralPrefix = Resource.Count == 1 ? "is" : "are";
+                            string pluralSuffix = Resource.Count == 1 ? "quote" : "quotes";
+                            host.SendMessage(metadata, $"There {pluralPrefix} {Resource.Count} saved {pluralSuffix}.");
+                        }
                         return;
                     default:
                         string fuzzy = _RemoveParts(message, 1).ToLower(); // fuzzy search
                         foreach (var q in Resource)
                         {
-                            if (q.Response.ToLower().Contains(fuzzy)) {
+                            if (q.Response.ToLower().Contains(fuzzy))
+                            {
                                 host.SendMessage(metadata, $"(#{Resource.IndexOf(q) + 1}) {q.Response}");
                                 return;
                             }
@@ -139,7 +167,6 @@ namespace ApplebotEx.Modules
                         return;
                 }
             }
-                            } catch (Exception e) {Console.WriteLine(e.ToString());}
         }
 
         private static string _RemoveParts(string message, uint parts)
