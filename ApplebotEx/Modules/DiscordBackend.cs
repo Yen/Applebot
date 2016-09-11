@@ -404,7 +404,7 @@ namespace ApplebotEx.Modules
             {
                 using (var http = new HttpClient())
                 {
-                    http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(Resource.Token);
+                    http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", Resource.Token);
                     var response = http.PostAsync($"https://discordapp.com/api/channels/{locationID}/messages", content).Result;
                     switch (response.StatusCode)
                     {
