@@ -298,7 +298,7 @@ namespace ApplebotEx.Modules
                     IdleSince = null,
                     Game = new DiscordPacket.Game()
                     {
-                        Name = "github.com/Zogzer/Applebot"
+                        Name = "applebot.ix.je"
                     }
                 }
             }));

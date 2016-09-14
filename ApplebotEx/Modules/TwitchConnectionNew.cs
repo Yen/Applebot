@@ -80,6 +80,7 @@ namespace ApplebotEx.Modules
 
         private Thread _SendRunnerThread;
         private bool _SendRunnerCancelRequest;
+        private object _InitializeLock = new object();
 
         public TwitchConnectionNew(AccountInfo account, string[] channels)
         {
@@ -117,34 +118,37 @@ namespace ApplebotEx.Modules
 
         private void _Reconnect()
         {
-            Logger.Log($"Connecting to Twitch IRC -> {Account.Username}");
+            lock (_InitializeLock)
+            {
+                Logger.Log($"Connecting to Twitch IRC -> {Account.Username}");
 
-            if (_Client != null)
-                _Client.Dispose();
-            _Client = new TcpClient();
+                if (_Client != null)
+                    _Client.Dispose();
+                _Client = new TcpClient();
 
-            _Client.ConnectAsync("irc.twitch.tv", 6667).Wait();
+                _Client.ConnectAsync("irc.twitch.tv", 6667).Wait();
 
-            if (_Reader != null)
-                _Reader.Dispose();
-            _Reader = new StreamReader(_Client.GetStream());
+                if (_Reader != null)
+                    _Reader.Dispose();
+                _Reader = new StreamReader(_Client.GetStream());
 
-            if (_Writer != null)
-                _Writer.Dispose();
-            _Writer = new StreamWriter(_Client.GetStream());
+                if (_Writer != null)
+                    _Writer.Dispose();
+                _Writer = new StreamWriter(_Client.GetStream());
 
-            Logger.Log("Sending login credentials");
+                Logger.Log("Sending login credentials");
 
-            _SendStringRaw($"PASS {Account.OAuth}");
-            _SendStringRaw($"NICK {Account.Username}");
+                _SendStringRaw($"PASS {Account.OAuth}");
+                _SendStringRaw($"NICK {Account.Username}");
 
-            var response = IRCMessage.Parse(_Reader.ReadLine());
-            if (response.Type != "001")
-                throw new Exception("Server did not return expected login message, login failed?");
+                var response = IRCMessage.Parse(_Reader.ReadLine());
+                if (response.Type != "001")
+                    throw new Exception("Server did not return expected login message, login failed?");
 
-            Logger.Log("Connecting to channels");
-            foreach (var c in Channels)
-                _SendString($"JOIN #{c}", MessagePriority.Medium);
+                Logger.Log("Connecting to channels");
+                foreach (var c in Channels)
+                    _SendString($"JOIN #{c}", MessagePriority.Medium);
+            }
         }
 
         private void _StopRunners()
@@ -209,11 +213,12 @@ namespace ApplebotEx.Modules
         private void _SendStringRaw(string message)
         {
             lock (_FloodLock)
-            {
-                _Writer.WriteLine(message);
-                _Writer.Flush();
-                _FloodQueue.Enqueue(DateTime.UtcNow);
-            }
+                lock (_InitializeLock)
+                {
+                    _Writer.WriteLine(message);
+                    _Writer.Flush();
+                    _FloodQueue.Enqueue(DateTime.UtcNow);
+                }
         }
 
         private void _SendRunner()
@@ -226,7 +231,7 @@ namespace ApplebotEx.Modules
                         break;
 
                     // remove timed out entries
-                    while (_FloodQueue.Any() && DateTime.Now - _FloodQueue.First() > _FloodSpan)
+                    while (_FloodQueue.Any() && DateTime.UtcNow - _FloodQueue.First() > _FloodSpan)
                         _FloodQueue.Dequeue();
 
                     // if the max is reached, wait a second and try again
@@ -239,7 +244,6 @@ namespace ApplebotEx.Modules
                     }
 
                     // send a message if there are any or wait for lock pulse
-                    Monitor.Exit(_FloodLock);
                     lock (_MessageLock)
                     {
                         if (_MessageQueue.Any())
@@ -248,9 +252,12 @@ namespace ApplebotEx.Modules
                             _MessageQueue.Remove(_MessageQueue.First());
                         }
                         else
+                        {
+                            Monitor.Exit(_FloodLock);
                             Monitor.Wait(_MessageLock);
+                            Monitor.Enter(_FloodLock);
+                        }
                     }
-                    Monitor.Enter(_FloodLock);
                 }
         }
 
