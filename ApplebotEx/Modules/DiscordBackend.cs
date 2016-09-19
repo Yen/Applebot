@@ -50,6 +50,10 @@ namespace ApplebotEx.Modules
         private Thread _SendRunnerThread;
         private bool _SendRunnerCancelRequest;
 
+        private Thread _HeartbeatThread;
+        private bool _HeartbeatCancelRequest;
+        private object _HeartbeatLock = new object();
+
         public DiscordBackend() : base("Resources/DiscordBackend.json")
         { }
 
@@ -106,11 +110,21 @@ namespace ApplebotEx.Modules
         private void _StopRunners()
         {
             _SendRunnerCancelRequest = true;
+            _HeartbeatCancelRequest = true;
             lock (_MessageQueueLock)
                 Monitor.Pulse(_MessageQueueLock);
 
+            if (_HeartbeatThread != null)
+                lock (_HeartbeatLock)
+                    Monitor.Pulse(_HeartbeatLock);
+
             Logger.Log($"Waiting for {nameof(_SendRunnerThread)} to end");
             _SendRunnerThread.Join();
+
+            Logger.Log($"Waiting for {nameof(_HeartbeatThread)} to end");
+            _HeartbeatThread.Join();
+            _HeartbeatThread = null;
+            _HeartbeatCancelRequest = false;
         }
 
         private void _StartRunners()
@@ -274,7 +288,7 @@ namespace ApplebotEx.Modules
             _BotUser = packet.User;
 
             // heartbeat runner
-            new Thread(() =>
+            _HeartbeatThread = new Thread(() =>
             {
                 while (true)
                 {
@@ -282,12 +296,28 @@ namespace ApplebotEx.Modules
                     heartbeat.OPCode = 1;
                     heartbeat.Data = _LastMessageSequence;
 
-                    _SendString(JsonConvert.SerializeObject(heartbeat));
-                    Logger.Log("Discord heartbeat sent");
+                    try
+                    {
+                        _SendString(JsonConvert.SerializeObject(heartbeat));
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Log($"Exception thrown while sending heartbeat -> {e.Message}", LoggerColor.Red);
+                        // crash backend to force restart
+                        try { _Socket.Abort(); } catch { }
+                        return;
+                    }
 
-                    Thread.Sleep(TimeSpan.FromMilliseconds(packet.HeartbeatInterval));
+                    Logger.Log("Discord heartbeat sent");
+                    lock (_HeartbeatLock)
+                    {
+                        if (_HeartbeatCancelRequest)
+                            return;
+                        Monitor.Wait(_HeartbeatLock, TimeSpan.FromMilliseconds(packet.HeartbeatInterval));
+                    }
                 }
-            }).Start();
+            });
+            _HeartbeatThread.Start();
 
             // initial status update
             _SendString(JsonConvert.SerializeObject(new DiscordPacket()
