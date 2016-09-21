@@ -7,8 +7,8 @@
     "dependencies": {
         "Newtonsoft.Json": "9.0.1",
         "System.Runtime.Loader": "4.0.0",
-        "System.Net.WebSockets.Client": "4.0.0",
-        "Microsoft.AspNetCore.WebUtilities": "1.0.0"
+        "Microsoft.AspNetCore.WebUtilities": "1.0.0",
+        "System.Net.WebSockets.Client": "4.3.0-preview1-24508-03"
     },
     "frameworks": {
         "netcoreapp1.0": {

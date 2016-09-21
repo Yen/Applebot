@@ -59,12 +59,6 @@ namespace ApplebotEx.Modules
 
         protected override bool Bootstrap()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Logger.Log("Current version of System.Net.WebSockets.Client does not support Unix systems, DiscordBackend disabled", LoggerColor.Magenta);
-                return false;
-            }
-
             // restart runner
             new Thread(() =>
             {
@@ -122,8 +116,11 @@ namespace ApplebotEx.Modules
             _SendRunnerThread.Join();
 
             Logger.Log($"Waiting for {nameof(_HeartbeatThread)} to end");
-            _HeartbeatThread.Join();
-            _HeartbeatThread = null;
+            if (_HeartbeatThread != null)
+            {
+                _HeartbeatThread.Join();
+                _HeartbeatThread = null;
+            }
             _HeartbeatCancelRequest = false;
         }
 
