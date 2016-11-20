@@ -158,7 +158,8 @@ namespace ApplebotEx.Modules
                 Monitor.Pulse(_MessageLock);
 
             Logger.Log($"Waiting for {nameof(_SendRunnerThread)} to end");
-            _SendRunnerThread.Join();
+            if (_SendRunnerThread != null)
+                _SendRunnerThread.Join();
         }
 
         private void _StartRunners()

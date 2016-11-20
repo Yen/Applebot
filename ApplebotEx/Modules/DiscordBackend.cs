@@ -322,7 +322,6 @@ namespace ApplebotEx.Modules
                 OPCode = 3,
                 Data = new DiscordPacket.StatusUpdate()
                 {
-                    IdleSince = null,
                     Game = new DiscordPacket.Game()
                     {
                         Name = "applebot.ix.je"
