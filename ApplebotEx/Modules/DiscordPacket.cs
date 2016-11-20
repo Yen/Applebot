@@ -130,11 +130,17 @@ namespace ApplebotEx.Modules
 
         public class StatusUpdate
         {
-            [JsonProperty("idle_since")]
-            public int? IdleSince;
+            [JsonProperty("status")]
+            public string Status = "online";
+
+            [JsonProperty("since")]
+            public int Since = 0;
 
             [JsonProperty("game")]
             public Game Game;
+
+            [JsonProperty("afk")]
+            public bool AFK = false;
         }
 
         public class User
