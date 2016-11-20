@@ -229,8 +229,8 @@ namespace ApplebotEx.Modules
             [JsonProperty("name")]
             public string Name;
 
-            [JsonProperty("roles")]
-            public string RoleIDs;
+            //[JsonProperty("roles")]
+            //public string RoleIDs;
 
             [JsonProperty("require_colons")]
             public bool RequiresColons;
