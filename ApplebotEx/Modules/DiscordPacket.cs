@@ -46,8 +46,8 @@ namespace ApplebotEx.Modules
             [JsonProperty("mentions")]
             public User[] Mentions;
 
-            [JsonProperty("mention_roles")]
-            public Role[] MentionRoles;
+            //[JsonProperty("mention_roles")]
+            //public Role[] MentionRoles;
 
             [JsonProperty("attachments")]
             public Attachment[] Attachments;
@@ -208,8 +208,8 @@ namespace ApplebotEx.Modules
             [JsonProperty("voice_states")]
             public VoiceState[] VoiceStates;
 
-            [JsonProperty("roles")]
-            public Role[] Roles;
+            //[JsonProperty("roles")]
+            //public Role[] Roles;
 
             [JsonProperty("emojis")]
             public Emoji[] Emojis;
