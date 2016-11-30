@@ -204,6 +204,9 @@ namespace ApplebotEx.Modules
                             Monitor.Enter(_MessageQueueLock);
                             break;
                         case SendMessageResponse.Failed:
+                            // if it failed assume the message is invalid
+                            _MessageQueue.Dequeue();
+
                             // crash the backend to force restart
                             Logger.Log("Send runner crashing to force restart");
                             try { _Socket.Abort(); } catch { }
