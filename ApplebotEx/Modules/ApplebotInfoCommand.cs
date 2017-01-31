@@ -26,6 +26,10 @@ namespace ApplebotEx.Modules
         {
             if (Regex.Match(message, @"^!applebot_info\b", RegexOptions.IgnoreCase).Success)
             {
+                var permissions = host as IBotPermissions;
+                if (permissions == null || !permissions.HasBotPermissions(metadata))
+                    return null;
+            
                 if (host is DiscordBackend)
                 {
                     var system = $"System:\n\t{RuntimeInformation.OSDescription}\n\t{RuntimeInformation.OSArchitecture}";
