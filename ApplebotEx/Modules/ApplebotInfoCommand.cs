@@ -28,7 +28,7 @@ namespace ApplebotEx.Modules
             {
                 var permissions = host as IBotPermissions;
                 if (permissions == null || !permissions.HasBotPermissions(metadata))
-                    return null;
+                    return;
             
                 if (host is DiscordBackend)
                 {
