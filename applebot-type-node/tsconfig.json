@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "rootDir": "./src",
+        "outDir": "./bin",
+
+        "sourceMap": true,
+        "strict": true,
+
+        "target": "es5",
+        "lib": [
+            "es2017"
+        ]
+    }
+}

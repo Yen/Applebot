@@ -1,0 +1,13 @@
+{
+    "name": "applebot-type-node",
+    "version": "0.1.0",
+    "dependencies": {
+        "@types/node": "^8.0.15",
+        "discord.js": "^11.1.0",
+        "node-fetch": "^1.7.1",
+        "@types/node-fetch": "^1.6.7"
+    },
+    "scripts": {
+        "start": "node ./bin/app.js"
+    }
+}
