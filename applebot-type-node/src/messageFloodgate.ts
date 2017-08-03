@@ -1,4 +1,5 @@
 // TODO: higher resolution timers
+
 export default class MessageFloodgate {
 
     // seconds
@@ -7,6 +8,12 @@ export default class MessageFloodgate {
 
     constructor(delay: number) {
         this._delay = delay;
+    }
+
+    createResponder(responder: (content: string) => Promise<void>): (content: string, bypass: boolean) => Promise<void> {
+        return async (content, bypass) => {
+            await this.post(() => responder(content), bypass);
+        };
     }
 
     async post(task: () => Promise<void>, bypass = false): Promise<void> {
