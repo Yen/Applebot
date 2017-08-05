@@ -1,11 +1,11 @@
 import ExtendedInfo from "./extendedInfo";
 
 export default interface TwitchExtendedInfo extends ExtendedInfo {
-    clientUsername: string;
+	clientUsername: string;
 
-    username: string;
-    channel: string;
-    moderator: boolean;
+	username: string;
+	channel: string;
+	moderator: boolean;
 
-    sendMessage: (clientUsername: string, channel: string, content: string) => Promise<void>;
+	sendMessage: (clientUsername: string, channel: string, content: string) => Promise<void>;
 }
