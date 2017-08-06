@@ -20,6 +20,7 @@ type TwitchClientModeratorListener = (username: string, channel: string, moderat
 
 class TwitchClient {
 
+	private _username: string;
 	private _socket: net.Socket;
 	private _reader: readline.ReadLine;
 
@@ -41,7 +42,7 @@ class TwitchClient {
 			socket.addListener("close", reject);
 
 			const reader = readline.createInterface({ input: socket });
-			const client = new TwitchClient(socket, reader);
+			const client = new TwitchClient(username, socket, reader);
 
 			const onLine = (line: string) => {
 				reader.removeListener("line", onLine);
@@ -71,7 +72,8 @@ class TwitchClient {
 		});
 	}
 
-	private constructor(socket: net.Socket, reader: readline.ReadLine) {
+	private constructor(username: string, socket: net.Socket, reader: readline.ReadLine) {
+		this._username = username;
 		this._socket = socket;
 		this._reader = reader;
 
@@ -87,8 +89,16 @@ class TwitchClient {
 		this._onMessageListeners = [...this._onMessageListeners, listener];
 	}
 
+	removeOnMessageListener(listener: TwitchClientMessageListener) {
+		this._onMessageListeners = this._onMessageListeners.filter(l => l != listener);
+	}
+
 	addOnModeratorListener(listener: TwitchClientModeratorListener) {
 		this._onModeratorListeners = [...this._onModeratorListeners, listener];
+	}
+
+	removeOnModeratorListener(listener: TwitchClientModeratorListener) {
+		this._onModeratorListeners = this._onModeratorListeners.filter(l => l != listener);
 	}
 
 	async sendMessage(channel: string, content: string) {
@@ -144,6 +154,13 @@ class TwitchClient {
 	private async _onJOIN(line: string) {
 		const parts = remainderSplit(line, 3);
 		if (parts.length < 3) {
+			return;
+		}
+
+		const username = parts[0].split("!")[0].substring(1);
+
+		// only care if the user is the client
+		if (username != this._username) {
 			return;
 		}
 

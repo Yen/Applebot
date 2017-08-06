@@ -1,7 +1,8 @@
-import TwitchManager from "./twitchManager";
+import TwitchClient from "./twitchClient";
 import MessageHandler from "./messageHandler";
 import ExtendedInfo from "./extendedInfo";
 import DiscordExtendedInfo from "./discordExtendedInfo";
+import TwitchExtendedInfo from "./twitchExtendedInfo";
 
 import PingCommand from "./messageHandlers/pingCommand";
 import ApplebotInfoCommand from "./messageHandlers/applebotInfoCommand";
@@ -28,21 +29,52 @@ async function submitToHandlers(handlers: MessageHandler[], responder: (content:
 }
 
 async function prepareTwitch(handlers: MessageHandler[]) {
-	const loginInfo = {
-		username: twitchSettings.username,
-		oauth: twitchSettings.oauth
-	};
-	const twitchManager = new TwitchManager(loginInfo, twitchSettings.channels);
+	const channels = twitchSettings.channels as string[];
+	const moderators = new Map(channels.map(c => [c, new Set()] as [string, Set<string>]));
 
-	twitchManager.addOnMessageListener(async (content, info) => {
+	const client = await TwitchClient.createClient(twitchSettings.username, twitchSettings.oauth);
+
+	client.addOnMessageListener(async (username, channel, content) => {
 		const responder = async (c: string) => {
-			await twitchManager.sendMessage(info.clientUsername, info.channel, c);
+			await client.sendMessage(channel, c);
 		};
 
-		await submitToHandlers(handlers, responder, content, info);
+		const isModerator = (): boolean => {
+			const moderatorsSet = moderators.get(channel);
+			if (moderatorsSet == undefined) {
+				// this should not really happen
+				return false;
+			}
 
-		console.log(`< ${info.clientUsername} #${info.channel} ${info.username}: ${content}`);
+			return moderatorsSet.has(username);
+		};
+
+		const extendedInfo: TwitchExtendedInfo = {
+			type: "TWITCH",
+			username,
+			channel,
+			moderator: isModerator(),
+			sendMessage: client.sendMessage
+		};
+
+		await submitToHandlers(handlers, responder, content, extendedInfo);
 	});
+
+	client.addOnModeratorListener(async (username, channel, moderator) => {
+		const set = moderators.get(channel);
+		if (set == undefined) {
+			throw new Error("Channel not found in moderators map");
+		}
+		if (moderator) {
+			console.log(`Adding moderator "${username}" to channel #${channel}`);
+			set.add(username);
+		} else {
+			console.log(`Removing moderator "${username}" from channel #${channel}`);
+			set.delete(username);
+		}
+	});
+
+	await Promise.all(channels.map(c => client.joinChannel(c)));
 }
 
 async function prepareDiscord(handlers: MessageHandler[]) {
