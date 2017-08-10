@@ -1,8 +1,10 @@
 import TwitchClient from "./twitchClient";
 import MessageHandler from "./messageHandler";
+
 import ExtendedInfo from "./extendedInfo";
-import DiscordExtendedInfo from "./discordExtendedInfo";
-import TwitchExtendedInfo from "./twitchExtendedInfo";
+import UserBaseExtendedInfo from "./extendedInfos/userBaseExtendedInfo";
+import DiscordExtendedInfo from "./extendedInfos/discordExtendedInfo";
+import TwitchExtendedInfo from "./extendedInfos/twitchExtendedInfo";
 
 import PingCommand from "./messageHandlers/pingCommand";
 import ApplebotInfoCommand from "./messageHandlers/applebotInfoCommand";
@@ -10,11 +12,13 @@ import YoutubeParser from "./messageHandlers/youtubeParser";
 
 import * as Discord from "discord.js";
 import * as fs from "fs";
+import * as WebSocket from "ws";
 
 console.log("Applebot");
 
 const twitchSettings = JSON.parse(fs.readFileSync("resources/twitch.json", "utf8"));
 const discordSettings = JSON.parse(fs.readFileSync("resources/discord.json", "utf8"));
+const ustreamSettings = JSON.parse(fs.readFileSync("resources/ustream.json", "utf8"));
 
 async function submitToHandlers(handlers: MessageHandler[], responder: (content: string) => Promise<void>, content: string, info?: ExtendedInfo) {
 	for (const h of handlers) {
@@ -97,6 +101,57 @@ async function prepareDiscord(handlers: MessageHandler[]) {
 	await client.login(discordSettings.token);
 }
 
+// this totally isnt a hack dont even worry
+async function prepareUstream(handlers: MessageHandler[], websocketUri: string) {
+    const ws = new WebSocket(websocketUri);
+    ws.on("error", console.error);
+    ws.on("open", () => console.log("Ustream connection established"));
+    ws.on("message", data => {
+        const str = data.toString();
+        if (str[0] != "a") {
+            return;
+        }
+
+        const json = JSON.parse(str.substr(1));
+        for (const a of json) {
+            const a2 = JSON.parse(a);
+
+            if (a2.cmd == "info") {
+                console.log("Ustream login success");
+                if (a2.payload.nick == "") {
+                    ws.send(JSON.stringify([{
+                        cmd: "changeNick",
+                        payload: {
+                            nick: "Applebot"
+                        }
+                    }]));
+                }
+            }
+
+            if (a2.cmd != "message") {
+                continue;
+            }
+
+			const info: UserBaseExtendedInfo = {
+				type: "USTREAM",
+				username: a2.payload.user.nick
+			};
+
+            submitToHandlers(handlers, async (content: string) => {
+                const msg = {
+                    cmd: "message",
+                    payload: {
+                        room: a2.room,
+                        text: content
+                    }
+                };
+                const payload = JSON.stringify([JSON.stringify(msg)]);
+                ws.send(payload);
+            }, a2.payload.text, info).catch(console.error);
+        }
+    });
+}
+
 (async () => {
 	const handlers: MessageHandler[] = [
 		new PingCommand(),
@@ -104,10 +159,16 @@ async function prepareDiscord(handlers: MessageHandler[]) {
 		new YoutubeParser()
 	];
 
-	await Promise.all([
+	let backendTasks: Promise<void>[] = [
 		prepareTwitch(handlers),
 		prepareDiscord(handlers)
-	]);
+	];
+
+	if (ustreamSettings.websocketUri) {
+		backendTasks = [...backendTasks, prepareUstream(handlers, ustreamSettings.websocketUri)];
+	}
+
+	await Promise.all(backendTasks);
 })().catch(reason => {
 	console.error("Error caused application to exit");
 	if (reason) {

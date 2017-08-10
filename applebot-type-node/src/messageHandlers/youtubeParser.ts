@@ -2,7 +2,7 @@ import MessageHandler from "../messageHandler";
 import ExtendedInfo from "../extendedInfo";
 import { URL } from "url";
 import fetch from "node-fetch";
-import TwitchExtendedInfo from "../twitchExtendedInfo";
+import UserBaseExtendedInfo from "../extendedInfos/userBaseExtendedInfo";
 import * as fs from "fs";
 
 const regex = /((youtube\.com\/watch)|(youtu\.be\/))\S*/g;
@@ -12,7 +12,7 @@ export default class YoutubeParser implements MessageHandler {
 
 
 	async handleMessage(responder: (content: string) => Promise<void>, content: string, info?: ExtendedInfo) {
-		if (info == undefined || info.type != "TWITCH") {
+		if (info == undefined || !(info.type == "TWITCH" || info.type == "USTREAM")) {
 			return;
 		}
 
@@ -68,9 +68,9 @@ export default class YoutubeParser implements MessageHandler {
 			}
 		}
 
-		const twitchInfo = info as TwitchExtendedInfo;
+		const userInfo = info as UserBaseExtendedInfo;
 		for (const i of informations) {
-			await responder(`${twitchInfo.username} linked a video, "${i.title}" by "${i.channelTitle}"`);
+			await responder(`${userInfo.username} linked a video, "${i.title}" by "${i.channelTitle}"`);
 		}
 	}
 

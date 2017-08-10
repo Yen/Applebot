@@ -1,6 +1,6 @@
 import MessageHandler from "../messageHandler";
 import ExtendedInfo from "../extendedInfo";
-import TwitchExtendedInfo from "../twitchExtendedInfo";
+import TwitchExtendedInfo from "../extendedInfos/twitchExtendedInfo";
 import MessageFloodgate from "../messageFloodgate";
 
 class PingCommand implements MessageHandler {
