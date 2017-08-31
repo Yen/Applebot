@@ -93,6 +93,7 @@ async function prepareDiscord(handlers: MessageHandler[]) {
 		};
 		const info: DiscordExtendedInfo = {
 			type: "DISCORD",
+			username: message.author.username,
 			message
 		};
 		submitToHandlers(handlers, responder, message.content, info)
@@ -105,7 +106,14 @@ async function prepareDiscord(handlers: MessageHandler[]) {
 // this totally isnt a hack dont even worry
 async function prepareUstream(handlers: MessageHandler[], websocketUri: string) {
     const ws = new WebSocket(websocketUri);
-    ws.on("error", console.error);
+	ws.on("error", console.error);
+	ws.on("close", (code, message) => {
+		console.error("Ustream connection closed");
+		console.error(`Code: ${code}`);
+		if (message) {
+			console.error(`Message: ${message}`);
+		}
+	});
     ws.on("open", () => console.log("Ustream connection established"));
     ws.on("message", data => {
         const str = data.toString();
