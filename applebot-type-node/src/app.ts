@@ -9,6 +9,7 @@ import TwitchExtendedInfo from "./extendedInfos/twitchExtendedInfo";
 import PingCommand from "./messageHandlers/pingCommand";
 import ApplebotInfoCommand from "./messageHandlers/applebotInfoCommand";
 import YoutubeParser from "./messageHandlers/youtubeParser";
+import Quotes from "./messageHandlers/Quotes";
 
 import * as Discord from "discord.js";
 import * as fs from "fs";
@@ -156,7 +157,8 @@ async function prepareUstream(handlers: MessageHandler[], websocketUri: string) 
 	const handlers: MessageHandler[] = [
 		new PingCommand(),
 		new ApplebotInfoCommand(),
-		new YoutubeParser()
+		new YoutubeParser(),
+		await Quotes.create()
 	];
 
 	let backendTasks: Promise<void>[] = [
