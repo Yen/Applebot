@@ -31,6 +31,8 @@ function writeQuotesFile(quotes: Quote[]): Promise<string> {
 		fs.writeFile("resources/quotes.json", content, "utf8", function (err) {
 			if (err) {
 				reject(err);
+			} else {
+				resolve();
 			}
 		})
 	});
@@ -87,7 +89,7 @@ class Quotes implements MessageHandler {
 							const quoteText = args.slice(2).join(" ");
 							const newQuote = {response: quoteText, added_by: "TODO"};
 							await responder(`Added quote #${this._quotes.push(newQuote)}.`);
-							writeQuotesFile(this._quotes);
+							await writeQuotesFile(this._quotes);
 							break;
 						} else {
 							await responder('Usage: "!quote add [quote]"');
@@ -120,7 +122,7 @@ class Quotes implements MessageHandler {
 						if (this._quotes.length > 0) {
 							this._quotes.pop();
 							await responder(`Removed quote #${this._quotes.length + 1}.`);
-							writeQuotesFile(this._quotes);
+							await writeQuotesFile(this._quotes);
 							break;
 
 						} else {
