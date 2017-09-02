@@ -87,7 +87,7 @@ class Quotes implements MessageHandler {
 						}
 						if (args.length >= 3) {
 							const quoteText = args.slice(2).join(" ");
-							const newQuote = {response: quoteText, added_by: "TODO"};
+							const newQuote = {response: quoteText, added_by: username};
 							await responder(`Added quote #${this._quotes.push(newQuote)}.`);
 							await writeQuotesFile(this._quotes);
 							break;
