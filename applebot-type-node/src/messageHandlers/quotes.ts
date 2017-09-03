@@ -9,12 +9,12 @@ interface Quote {
 	"added_by": string;
 }
 
-function readQuotesFile(): Promise<string> | undefined {
+function readQuotesFile(): Promise<string | undefined> {
 	return new Promise((resolve, reject) => {
 		fs.readFile("resources/quotes.json", "utf8", (err, data) => {
 			if (err) {
 				if (err.code === "ENOENT") {
-					resolve(undefined);
+					resolve();
 				} else {
 					reject(err);
 				}
@@ -26,8 +26,8 @@ function readQuotesFile(): Promise<string> | undefined {
 }
 
 function writeQuotesFile(quotes: Quote[]): Promise<string> {
-	const content = JSON.stringify(quotes);
 	return new Promise((resolve, reject) => {
+		const content = JSON.stringify(quotes);
 		fs.writeFile("resources/quotes.json", content, "utf8", function (err) {
 			if (err) {
 				reject(err);

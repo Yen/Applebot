@@ -9,12 +9,12 @@ interface Pattern {
 	response: string;
 }
 
-function readPatternFile(): Promise<string> | undefined {
+function readPatternFile(): Promise<string | undefined> {
 	return new Promise((resolve, reject) => {
 		fs.readFile("resources/dynamicresponse.json", "utf8", (err, data) => {
 			if (err) {
 				if (err.code === "ENOENT") {
-					resolve(undefined);
+					resolve();
 				} else {
 					reject(err);
 				}
@@ -26,8 +26,8 @@ function readPatternFile(): Promise<string> | undefined {
 }
 
 function writePatternFile(patterns: Pattern[]): Promise<string> {
-	const content = JSON.stringify(patterns);
 	return new Promise((resolve, reject) => {
+		const content = JSON.stringify(patterns);
 		fs.writeFile("resources/dynamicresponse.json", content, "utf8", function (err) {
 			if (err) {
 				reject(err);
@@ -71,7 +71,7 @@ class DynamicResponse implements MessageHandler {
 			}
 		}
 
-		if (args[0].substring(0,1) != "!") {
+		if (args[0][0] != "!") {
 			return;
 		}
 
