@@ -1,5 +1,6 @@
 import TwitchClient from "./twitchClient";
 import MessageHandler from "./messageHandler";
+import PersistantService from "./persistantService";
 
 import ExtendedInfo from "./extendedInfo";
 import UserBaseExtendedInfo from "./extendedInfos/userBaseExtendedInfo";
@@ -35,7 +36,13 @@ async function submitToHandlers(handlers: MessageHandler[], responder: (content:
 	}
 }
 
-async function prepareTwitch(handlers: MessageHandler[]) {
+interface BackendPrepared {
+	type: string;
+	backend: any;
+	backgroundPromise: Promise<void>;
+}
+
+async function prepareTwitch(handlers: MessageHandler[]): Promise<BackendPrepared> {
 	const channels = twitchSettings.channels as string[];
 	const moderators = new Map(channels.map(c => [c, new Set()] as [string, Set<string>]));
 
@@ -81,10 +88,18 @@ async function prepareTwitch(handlers: MessageHandler[]) {
 		}
 	});
 
-	await Promise.all(channels.map(c => client.joinChannel(c)));
+	const backgroundPromise = (async () => {
+		await Promise.all(channels.map(c => client.joinChannel(c)));
+	});
+
+	return {
+		type: "TWITCH",
+		backend: client,
+		backgroundPromise: backgroundPromise()
+	};
 }
 
-async function prepareDiscord(handlers: MessageHandler[]) {
+async function prepareDiscord(handlers: MessageHandler[]): Promise<BackendPrepared> {
 	const client = new Discord.Client();
 
 	client.on("ready", () => console.log("Discord client ready"));
@@ -102,12 +117,20 @@ async function prepareDiscord(handlers: MessageHandler[]) {
 			.catch(console.error);
 	});
 
-	await client.login(discordSettings.token);
+	const backgroundPromise = (async () => {
+		await client.login(discordSettings.token);
+	});
+
+	return {
+		type: "DISCORD",
+		backend: client,
+		backgroundPromise: backgroundPromise()
+	};
 }
 
 // this totally isnt a hack dont even worry
-async function prepareUstream(handlers: MessageHandler[], websocketUri: string) {
-    const ws = new WebSocket(websocketUri);
+async function prepareUstream(handlers: MessageHandler[], websocketUri: string): Promise<BackendPrepared> {
+	const ws = new WebSocket(websocketUri);
 	ws.on("error", console.error);
 	ws.on("close", (code, message) => {
 		console.error("Ustream connection closed");
@@ -116,51 +139,57 @@ async function prepareUstream(handlers: MessageHandler[], websocketUri: string) 
 			console.error(`Message: ${message}`);
 		}
 	});
-    ws.on("open", () => console.log("Ustream connection established"));
-    ws.on("message", data => {
-        const str = data.toString();
-        if (str[0] != "a") {
-            return;
-        }
+	ws.on("open", () => console.log("Ustream connection established"));
+	ws.on("message", data => {
+		const str = data.toString();
+		if (str[0] != "a") {
+			return;
+		}
 
-        const json = JSON.parse(str.substr(1));
-        for (const a of json) {
-            const a2 = JSON.parse(a);
+		const json = JSON.parse(str.substr(1));
+		for (const a of json) {
+			const a2 = JSON.parse(a);
 
-            if (a2.cmd == "info") {
-                console.log("Ustream login success");
-                if (a2.payload.nick == "") {
-                    ws.send(JSON.stringify([{
-                        cmd: "changeNick",
-                        payload: {
-                            nick: "Applebot"
-                        }
-                    }]));
-                }
-            }
+			if (a2.cmd == "info") {
+				console.log("Ustream login success");
+				if (a2.payload.nick == "") {
+					ws.send(JSON.stringify([{
+						cmd: "changeNick",
+						payload: {
+							nick: "Applebot"
+						}
+					}]));
+				}
+			}
 
-            if (a2.cmd != "message") {
-                continue;
-            }
+			if (a2.cmd != "message") {
+				continue;
+			}
 
 			const info: UserBaseExtendedInfo = {
 				type: "USTREAM",
 				username: a2.payload.user.nick
 			};
 
-            submitToHandlers(handlers, async (content: string) => {
-                const msg = {
-                    cmd: "message",
-                    payload: {
-                        room: a2.room,
-                        text: content
-                    }
-                };
-                const payload = JSON.stringify([JSON.stringify(msg)]);
-                ws.send(payload);
-            }, a2.payload.text, info).catch(console.error);
-        }
-    });
+			submitToHandlers(handlers, async (content: string) => {
+				const msg = {
+					cmd: "message",
+					payload: {
+						room: a2.room,
+						text: content
+					}
+				};
+				const payload = JSON.stringify([JSON.stringify(msg)]);
+				ws.send(payload);
+			}, a2.payload.text, info).catch(console.error);
+		}
+	});
+
+	return {
+		type: "USTREAM",
+		backend: undefined,
+		backgroundPromise: Promise.resolve()
+	};
 }
 
 (async () => {
@@ -173,14 +202,25 @@ async function prepareUstream(handlers: MessageHandler[], websocketUri: string) 
 		await DynamicResponse.create()
 	];
 
-	let backendTasks: Promise<void>[] = [
+	let backendPromises: Promise<BackendPrepared>[] = [
 		prepareTwitch(handlers),
 		prepareDiscord(handlers)
 	];
 
 	if (ustreamSettings.websocketUri) {
-		backendTasks = [...backendTasks, prepareUstream(handlers, ustreamSettings.websocketUri)];
+		backendPromises = [...backendPromises, prepareUstream(handlers, ustreamSettings.websocketUri)];
 	}
+
+	const services: PersistantService[] = [
+	];
+
+	const backendTasks = backendPromises.map(p => {
+		return p.then(p => {
+			Promise.all(services.map(s => s.backendInitialized(p.type, p.backend)))
+				.catch(console.error);
+			return p.backgroundPromise;
+		})
+	});
 
 	await Promise.all(backendTasks);
 })().catch(reason => {
