@@ -134,14 +134,14 @@ class Markov implements MessageHandler {
 		//strip low quality messages
 		const newCandidates = candidates.filter(c => !content.includes(c));
 
-		if (candidates.length == 0) {
+		if (newCandidates.length == 0) {
 			if (forceResponse)
-				await responder("...?");
+				await responder(":D?");
 			return;
 		}
 
 		//selection
-		let response = candidates[Math.floor(Math.random() * candidates.length)]; // this might change LOL
+		let response = newCandidates[Math.floor(Math.random() * newCandidates.length)]; // this might change LOL
 
 		//cleanup
 		response = response.replace(/,$/, "");
