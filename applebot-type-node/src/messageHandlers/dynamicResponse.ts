@@ -11,7 +11,7 @@ interface Pattern {
 
 function readPatternFile(): Promise<string | undefined> {
 	return new Promise((resolve, reject) => {
-		fs.readFile("resources/dynamicresponse.json", "utf8", (err, data) => {
+		fs.readFile("resources/dynamicResponse.json", "utf8", (err, data) => {
 			if (err) {
 				if (err.code === "ENOENT") {
 					resolve();
@@ -28,7 +28,7 @@ function readPatternFile(): Promise<string | undefined> {
 function writePatternFile(patterns: Pattern[]): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const content = JSON.stringify(patterns);
-		fs.writeFile("resources/dynamicresponse.json", content, "utf8", function (err) {
+		fs.writeFile("resources/dynamicResponse.json", content, "utf8", function (err) {
 			if (err) {
 				reject(err);
 			} else {

@@ -7,7 +7,7 @@ import * as fs from "fs";
 
 function readSettings(): Promise<string> {
 	return new Promise((resolve, reject) => {
-		fs.readFile("resources/twitchuptime.json", "utf8", (err, data) => {
+		fs.readFile("resources/twitchUptime.json", "utf8", (err, data) => {
 			if (err) {
 				reject(err);
 			} else {
@@ -42,9 +42,14 @@ class TwitchUptime implements MessageHandler {
 			try {
 				const request = await fetch(`https://decapi.me/twitch/uptime?channel=${this._channel}`);
 				const text = await request.text();
-				await resp(`Live for ${text}.`, false);
+				if (text.indexOf("offline") == -1) {
+					await resp(`Live for ${text}.`, false);
+				} else {
+					await resp(`Offline. (API updates are sometimes delayed)`, false);
+				}
+
 			} catch {
-				await resp("Error retrieving uptime info—is the stream offline?", false);
+				await resp("Couldn't retrieve uptime info—error in request?", false);
 			}
 		}
 	}

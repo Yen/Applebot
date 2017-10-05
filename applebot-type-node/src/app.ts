@@ -1,6 +1,6 @@
 import TwitchClient from "./twitchClient";
 import MessageHandler from "./messageHandler";
-import PersistantService from "./persistantService";
+import PersistentService from "./persistentService";
 
 import ExtendedInfo from "./extendedInfo";
 import UserBaseExtendedInfo from "./extendedInfos/userBaseExtendedInfo";
@@ -13,6 +13,9 @@ import YoutubeParser from "./messageHandlers/youtubeParser";
 import Quotes from "./messageHandlers/Quotes";
 import DynamicResponse from "./messageHandlers/DynamicResponse";
 import TwitchUptime from "./messageHandlers/TwitchUptime";
+import TwitchNotifier from "./messageHandlers/TwitchNotifier";
+import Markov from "./messageHandlers/Markov";
+import Fightan from "./messageHandlers/Fightan";
 
 import * as Discord from "discord.js";
 import * as fs from "fs";
@@ -109,7 +112,7 @@ async function prepareDiscord(handlers: MessageHandler[]): Promise<BackendPrepar
 		if (message.author == client.user) {
 			return;
 		}
-
+		
 		const responder = async (content: string) => {
 			await message.channel.send(content);
 		};
@@ -202,6 +205,8 @@ async function prepareUstream(handlers: MessageHandler[], websocketUri: string):
 		new PingCommand(),
 		new ApplebotInfoCommand(),
 		new YoutubeParser(),
+		new Fightan(),
+		await Markov.create(),
 		await TwitchUptime.create(),
 		await Quotes.create(),
 		await DynamicResponse.create()
@@ -216,7 +221,8 @@ async function prepareUstream(handlers: MessageHandler[], websocketUri: string):
 		backendPromises = [...backendPromises, prepareUstream(handlers, ustreamSettings.websocketUri)];
 	}
 
-	const services: PersistantService[] = [
+	const services: PersistentService[] = [
+		await TwitchNotifier.create()
 	];
 
 	const backendTasks = backendPromises.map(p => {
