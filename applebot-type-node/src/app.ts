@@ -105,6 +105,11 @@ async function prepareDiscord(handlers: MessageHandler[]): Promise<BackendPrepar
 	client.on("ready", () => console.log("Discord client ready"));
 
 	client.on("message", message => {
+		// ignore own messages
+		if (message.author == client.user) {
+			return;
+		}
+
 		const responder = async (content: string) => {
 			await message.channel.send(content);
 		};
