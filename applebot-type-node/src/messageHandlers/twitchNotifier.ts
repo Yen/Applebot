@@ -29,10 +29,10 @@ async function checkStream(type: string, backend: any, discordChannel: string, c
 			}
 		} else {
 			if (offlinePolls >= offlineThreshold) {
-				await targetChannel.send(`@everyone https://twitch.tv/${twitchChannel} is now live.\n**${json.stream.game}** - ${json.stream.channel.status}`);
+				await targetChannel.send(`@everyone Now live: **${json.stream.game}** - *${json.stream.channel.status}*\nWatch at https://twitch.tv/${twitchChannel}`);
 			} else {
 				if (json.stream.game != lastGame)
-					await targetChannel.send(`Game changed to **${json.stream.game}** - *${json.stream.channel.status}*\nhttps://twitch.tv/${twitchChannel}`);
+					await targetChannel.send(`@here Game changed: **${json.stream.game}** - *${json.stream.channel.status}*\nWatch at https://twitch.tv/${twitchChannel}`);
 			}
 			lastGame = json.stream.game;
 			offlinePolls = 0;
