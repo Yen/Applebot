@@ -131,6 +131,9 @@ class Markov implements MessageHandler {
 			}
 		}
 
+		//strip low quality messages
+		const newCandidates = candidates.filter(c => !content.includes(c));
+
 		if (candidates.length == 0) {
 			if (forceResponse)
 				await responder("...?");
