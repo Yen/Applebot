@@ -21,6 +21,7 @@ class Markov implements MessageHandler {
 	private _emotes: string[] = [":o", ":0", ":v", ":u", ":?", ":o", ":I"];
 	private _names: string[] = ["applebot", "appleb0t", "<@213048998678888448>"];
 	private _channels: string[] = ["spam", "shitposting", "bot-disaster"];
+	private _targetLength: number = 8;
 
 	public static async create() {
 		const markov = new Markov();
@@ -110,7 +111,7 @@ class Markov implements MessageHandler {
 		}
 
 		//generate candidates
-		const candidates = [];
+		let candidates = [];
 		for (let arg of args) {
 			let targetID = this._idArray[arg];
 			let chainQuery = await this._getStarter.get(targetID);
@@ -132,16 +133,30 @@ class Markov implements MessageHandler {
 		}
 
 		//strip low quality messages
-		const newCandidates = candidates.filter(c => !content.includes(c));
+		candidates = candidates.filter(c => !content.includes(c));
 
-		if (newCandidates.length == 0) {
+		if (candidates.length == 0) {
 			if (forceResponse)
 				await responder(":D?");
 			return;
 		}
 
 		//selection
-		let response = newCandidates[Math.floor(Math.random() * newCandidates.length)]; // this might change LOL
+
+		const distances = candidates.map(c => Math.abs(this._targetLength - (c.split(" ").length - 1)));
+		const maxDistance = distances.reduce(function(a, b) {
+			return Math.max(a, b);
+		});
+		const weightedCandidates = []
+		for (let i in candidates) {
+			for (let j = 0; j <= maxDistance - distances[i]; j++) {
+				weightedCandidates.push(candidates[i]);
+			}
+		}
+
+		console.log(weightedCandidates);
+
+		let response = weightedCandidates[Math.floor(Math.random() * weightedCandidates.length)]; // this might change LOL
 
 		//cleanup
 		response = response.replace(/,$/, "");
