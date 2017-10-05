@@ -10,12 +10,12 @@ import TwitchExtendedInfo from "./extendedInfos/twitchExtendedInfo";
 import PingCommand from "./messageHandlers/pingCommand";
 import ApplebotInfoCommand from "./messageHandlers/applebotInfoCommand";
 import YoutubeParser from "./messageHandlers/youtubeParser";
-import Quotes from "./messageHandlers/Quotes";
-import DynamicResponse from "./messageHandlers/DynamicResponse";
-import TwitchUptime from "./messageHandlers/TwitchUptime";
-import TwitchNotifier from "./messageHandlers/TwitchNotifier";
-import Markov from "./messageHandlers/Markov";
-import Fightan from "./messageHandlers/Fightan";
+import Quotes from "./messageHandlers/quotes";
+import DynamicResponse from "./messageHandlers/dynamicResponse";
+import TwitchUptime from "./messageHandlers/twitchUptime";
+import TwitchNotifier from "./messageHandlers/twitchNotifier";
+import Markov from "./messageHandlers/markov";
+import Fightan from "./messageHandlers/fightan";
 
 import * as Discord from "discord.js";
 import * as fs from "fs";
