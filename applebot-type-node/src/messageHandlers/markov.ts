@@ -105,7 +105,7 @@ class Markov implements MessageHandler {
 		}
 
 		//early out if message doesn't need to be generated
-		if (!forceResponse && Math.random() > 0.5) {
+		if (!forceResponse && Math.random() > 0.01) {
 			return;
 		}
 
