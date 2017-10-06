@@ -150,7 +150,8 @@ class Quotes implements MessageHandler {
 							if (matches.length > 0) {
 								const randomIndex = Math.floor(Math.random() * matches.length);
 								const randomQuote = matches[randomIndex];
-								await responder(`(#${randomIndex + 1}) ${randomQuote.response}`);
+								const index = this._quotes.indexOf(randomQuote);
+								await responder(`(#${index + 1}) ${randomQuote.response}`);
 							} else {
 								await responder("No quotes found. For a specific quote, use the # symbol.");
 								break;
