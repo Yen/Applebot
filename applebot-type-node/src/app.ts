@@ -16,6 +16,7 @@ import TwitchUptime from "./messageHandlers/twitchUptime";
 import TwitchNotifier from "./messageHandlers/twitchNotifier";
 import Markov from "./messageHandlers/markov";
 import Fightan from "./messageHandlers/fightan";
+import ReflexWatcher from "./messageHandlers/reflexWatcher";
 
 import * as Discord from "discord.js";
 import * as fs from "fs";
@@ -222,7 +223,8 @@ async function prepareUstream(handlers: MessageHandler[], websocketUri: string):
 	}
 
 	const services: PersistentService[] = [
-		await TwitchNotifier.create()
+		await TwitchNotifier.create(),
+		await ReflexWatcher.create()
 	];
 
 	const backendTasks = backendPromises.map(p => {
