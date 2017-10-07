@@ -1,0 +1,1 @@
+{"discordChannel": "012345678901234567", "serverURL": "https://reflex.syncore.org/api/query?hosts=50.116.22.14:25787,50.116.22.14:25788,50.116.22.14:25789", "baseTopic": "This text appears before server information in the channel topic.", "baseTitle": "title-when-servers-empty", "activeTitle": "title-when-servers-active"} 
