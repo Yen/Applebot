@@ -52,7 +52,7 @@ async function checkStream(type: string, backend: any, discordChannel: string, s
 			if (s.filteredPlayers.count != 0)
 				active = true;
 			for (let p of s.players) {
-				if (s.info.gameTypeFull = "Race") {
+				if (s.info.gameTypeFull == "Race") {
 					response += `${p.name} - ${new Date(p.score).toISOString().slice(14, -1)}\n`;
 				} else {
 					response += `${p.score} - ${p.name}\n`;
