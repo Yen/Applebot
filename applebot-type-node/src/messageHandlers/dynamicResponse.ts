@@ -92,16 +92,17 @@ class DynamicResponse implements MessageHandler {
 			switch (args[1].toLowerCase()) {
 				case "add": {
 					if (args.length > 3) {
-						const duplicates = this._patterns.filter(x => x.trigger == args[2]);
+						const trimmed = this._patterns.filter(x => x.trigger != args[2]);
 						const responseText = args.slice(3).join(" ");
 						const newPattern = {trigger: args[2], response: responseText};
-						this._patterns.push(newPattern);
-						await writePatternFile(this._patterns);
-						if (duplicates.length > 0) {
-							await responder(`Replaced command "!${args[2]}".`);
+						trimmed.push(newPattern)
+						if (trimmed.length == this._patterns.length) {
+							await responder(`Updated command "!${args[2]}".`);
 						} else {
-							await responder(`Added command !${args[2]}.`);
+							await responder(`Added command "!${args[2]}".`);
 						}
+						this._patterns = trimmed;
+						await writePatternFile(this._patterns);
 					} else {
 						await responder('Usage: "!dynamic add [trigger] [response]"');
 					}
