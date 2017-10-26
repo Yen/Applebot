@@ -25,7 +25,7 @@ async function checkStream(type: string, backend: any, discordChannel: string, c
 		if (json.stream == null) {
 			offlinePolls++;
 			if (offlinePolls == offlineThreshold) {
-				await targetChannel.send("Stream offline.");
+				// await targetChannel.send("Stream offline.");
 			}
 		} else {
 			if (offlinePolls >= offlineThreshold) {
