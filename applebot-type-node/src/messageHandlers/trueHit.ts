@@ -7,6 +7,8 @@ class TrueHit implements MessageHandler {
 
 	async handleMessage(responder: (content: string) => Promise<void>, content: string, info: ExtendedInfo | undefined) {
 		let args = content.split(" ");
+		if (args[0] != "!truehit")
+			return;
 		if (args.length == 2 || args.length == 3) {		
 			const readHit = Number(args[1]);
 			if (Number.isInteger(readHit) && readHit >= 0 && readHit <= 100) {
