@@ -18,6 +18,7 @@ import Markov from "./messageHandlers/markov";
 import Fightan from "./messageHandlers/fightan";
 import ReflexWatcher from "./messageHandlers/reflexWatcher";
 import TestSuccessful from "./messageHandlers/testSuccessful";
+import TrueHit from "./messageHandlers/trueHit";
 
 import * as Discord from "discord.js";
 import * as fs from "fs";
@@ -209,6 +210,7 @@ async function prepareUstream(handlers: MessageHandler[], websocketUri: string):
 		new YoutubeParser(),
 		new Fightan(),
 		new TestSuccessful(),
+		new TrueHit(),
 		await Markov.create(),
 		await TwitchUptime.create(),
 		await Quotes.create(),
