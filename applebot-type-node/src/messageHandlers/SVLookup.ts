@@ -68,7 +68,8 @@ class SVLookup implements MessageHandler {
 
 		for (let m of matches) {
 			const target = m.slice(2, -2);
-			console.log(target);
+			if (target == "")
+				return;
 			const discordInfo = info as DiscordExtendedInfo;
 			const request = await fetch(`http://sv.kaze.rip/cards/${target}`);
 			const json = await request.json();
