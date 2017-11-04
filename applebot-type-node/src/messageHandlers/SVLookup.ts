@@ -18,8 +18,9 @@ interface Card {
 	life: number,
 	evo_atk: number,
 	evo_life: number,
-	rarity: number
-	char_type: number
+	rarity: number,
+	char_type: number,
+	card_set_id: number
 }
 
 enum Craft {
@@ -40,11 +41,22 @@ enum Rarity {
 	Legendary
 }
 
+enum Set {
+	"Basic Card" = 10000,
+	"Standard",
+	"Darkness Evolved",
+	"Rise of Bahamut",
+	"Tempest of the Gods",
+	"Wonderland Dreams",
+	"Starforged Legends",
+	"Token" = 90000
+}
+
 	//https://shadowverse-portal.com/image/card/en/C_${card['card_id']}.png
 
 class SVLookup implements MessageHandler {
 
-	keywords = /(Storm|Rush|Bane|Drain|Spellboost|Ward|Fanfare|Last Words|Evolve|Earth Rite|Overflow|Vengeance|Evolve|Necromancy \((\d{1}|\d{2})\)|Enhance \((\d{1}|\d{2})\)|Countdown \((\d{1}|\d{2})\))/g
+	keywords = /(Clash|Storm|Rush|Bane|Drain|Spellboost|Ward|Fanfare|Last Words|Evolve|Earth Rite|Overflow|Vengeance|Evolve|Necromancy \((\d{1}|\d{2})\)|Enhance \((\d{1}|\d{2})\)|Countdown \((\d{1}|\d{2})\))/g
 
 	async handleMessage(responder: (content: string) => Promise<void>, content: string, info: ExtendedInfo | undefined) {
 		if (info == undefined || info.type != "DISCORD")
@@ -61,6 +73,14 @@ class SVLookup implements MessageHandler {
 			const request = await fetch(`http://sv.kaze.rip/cards/${target}`);
 			const json = await request.json();
 			const cards = json as Card[];
+
+			if (cards.length < 1) {
+				await discordInfo.message.channel.send({embed: {
+					color: 0xD00000,
+					title: "That search doesn't match any cards. Check for spelling errors?"
+				}});
+				return;
+			}
 	
 			const uniqueCards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], [])
 			let card;
@@ -87,10 +107,15 @@ class SVLookup implements MessageHandler {
 			} else {
 				card = uniqueCards[0];
 			}
-	
-			let craftLine = Craft[card.clan] + " " + Rarity[card.rarity];
+
+			if (card.card_name == "Jolly Rogers") {
+				card.card_name = "Bane Rogers";
+				card.skill_disc = "Randomly gain Bane, Bane or Bane.";
+			}
+
+			let sanitizedTribe = "";
 			if (card.tribe_name != "-")
-				craftLine = Rarity[card.rarity] + " " + Craft[card.clan] + " " + card.tribe_name;
+				sanitizedTribe = `(${card.tribe_name})`
 	
 			card.skill_disc = card.skill_disc.replace(/<br>/g, "\n");
 			card.skill_disc = card.skill_disc.replace(/\\\\/g, "");
@@ -102,22 +127,23 @@ class SVLookup implements MessageHandler {
 			const embed = new Discord.RichEmbed()
 				.setTitle(card.card_name + ` - ${card.cost} PP`)
 				.setURL(`http://sv.bagoum.com/cards/${card.card_id}`)
-				.setThumbnail(`https://shadowverse-portal.com/image/card/en/C_${card.card_id}.png`);
+				.setThumbnail(`https://shadowverse-portal.com/image/card/en/C_${card.card_id}.png`)
+				.setFooter(Craft[card.clan] + " " + Rarity[card.rarity] + " - " + Set[card.card_set_id]);
 	
 			switch (card.rarity) {
-				case 1: {
+				case Rarity.Bronze: {
 					embed.setColor(0xCD7F32);
 					break;
 				}
-				case 2: {
+				case Rarity.Silver: {
 					embed.setColor(0xC0C0C0);
 					break;
 				}
-				case 3: {
+				case Rarity.Gold: {
 					embed.setColor(0xFFD700);
 					break;
 				}
-				case 4: {
+				case Rarity.Legendary: {
 					embed.setColor(0xB9F2FF);
 					break;
 				}
@@ -125,22 +151,22 @@ class SVLookup implements MessageHandler {
 	
 			switch (card.char_type) {
 				case 1: {
-					embed.setDescription(`${card.atk}/${card.life} ➤ ${card.evo_atk}/${card.evo_life} - ${craftLine}\n\n${card.skill_disc}`)
+					embed.setDescription(`${card.atk}/${card.life} ➤ ${card.evo_atk}/${card.evo_life} - Follower ${sanitizedTribe}\n\n${card.skill_disc}`)
 					console.log(card);
 					if (card.evo_skill_disc != card.skill_disc && card.evo_skill_disc != "")
 						embed.addField("Evolved", card.evo_skill_disc, true);
 					break;
 				}
 				case 2: {
-					embed.setDescription("Amulet - " + craftLine + "\n\n" + card.skill_disc);
+					embed.setDescription(`Amulet ${sanitizedTribe}\n\n` + card.skill_disc);
 					break;
 				}
 				case 3: {
-					embed.setDescription("Amulet - " + craftLine + "\n\n" + card.skill_disc);
+					embed.setDescription(`Amulet ${sanitizedTribe}\n\n` + card.skill_disc);
 					break;
 				}
 				case 4: {
-					embed.setDescription("Spell - " + craftLine + "\n\n" + card.skill_disc);
+					embed.setDescription(`Spell ${sanitizedTribe}\n\n` + card.skill_disc);
 					break;
 				}
 			}
