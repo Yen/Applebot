@@ -78,9 +78,9 @@ class SVLookup implements MessageHandler {
 			if (cards.length < 1) {
 				await discordInfo.message.channel.send({embed: {
 					color: 0xD00000,
-					title: "That search doesn't match any cards. Check for spelling errors?"
+					title: `"${target}" doesn't match any cards. Check for spelling errors?`
 				}});
-				return;
+				continue;
 			}
 	
 			const uniqueCards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], [])
@@ -95,15 +95,15 @@ class SVLookup implements MessageHandler {
 						await discordInfo.message.channel.send({embed: {
 							color: 0xD00000,
 							description: matchTitles,
-							title: "That search matches multiple cards. Could you be more specific?"
+							title: `"${target}" matches multiple cards. Could you be more specific?`
 						}});
 					} else {
 						await discordInfo.message.channel.send({embed: {
 							color: 0xD00000,
-							title: "That search matches a large number of cards. Could you be more specific?"
+							title: `"${target}" matches a large number of cards. Could you be more specific?`
 						}});
 					}
-					return;
+					continue;
 				}
 			} else {
 				card = uniqueCards[0];
