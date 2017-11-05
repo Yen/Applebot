@@ -52,11 +52,9 @@ enum Set {
 	"Token" = 90000
 }
 
-	//https://shadowverse-portal.com/image/card/en/C_${card['card_id']}.png
-
 class SVLookup implements MessageHandler {
 
-	keywords = /(Clash|Storm|Rush|Bane|Drain|Spellboost|Ward|Fanfare|Last Words|Evolve|Earth Rite|Overflow|Vengeance|Evolve|Necromancy \((\d{1}|\d{2})\)|Enhance \((\d{1}|\d{2})\)|Countdown \((\d{1}|\d{2})\))/g
+	keywords = /(Clash:?|Storm:?|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward:?|Fanfare:?|Last Words:?|Evolve:?|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
 
 	async handleMessage(responder: (content: string) => Promise<void>, content: string, info: ExtendedInfo | undefined) {
 		if (info == undefined || info.type != "DISCORD")
@@ -154,7 +152,7 @@ class SVLookup implements MessageHandler {
 				case 1: {
 					embed.setDescription(`${card.atk}/${card.life} ➤ ${card.evo_atk}/${card.evo_life} - Follower ${sanitizedTribe}\n\n${card.skill_disc}`)
 					console.log(card);
-					if (card.evo_skill_disc != card.skill_disc && card.evo_skill_disc != "")
+					if (card.evo_skill_disc != card.skill_disc && card.evo_skill_disc != "" && !(card.skill_disc.includes(card.evo_skill_disc)))
 						embed.addField("Evolved", card.evo_skill_disc, true);
 					break;
 				}
