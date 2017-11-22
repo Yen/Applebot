@@ -212,7 +212,7 @@ async function prepareUstream(handlers: MessageHandler[], websocketUri: string):
 		new Fightan(),
 		new TestSuccessful(),
 		new TrueHit(),
-		new SVLookup(),
+		await SVLookup.create(),
 		await Markov.create(),
 		await TwitchUptime.create(),
 		await Quotes.create(),
