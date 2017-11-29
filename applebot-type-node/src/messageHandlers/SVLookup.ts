@@ -70,19 +70,18 @@ class SVLookup implements MessageHandler {
 		const request = await fetch(`http://sv.kaze.rip/cards/`);
 		const json = await request.json();
 		const cards = json as Card[];
-
-		for (let c of cards) {
-			c.skill_disc = SVLookup.escape(c.skill_disc).replace(SVLookup.keywords, "**$&**");
-			c.evo_skill_disc = SVLookup.escape(c.evo_skill_disc).replace(SVLookup.keywords, "**$&**");
+		for (let c of cards) { // keyword highlighting and dealing with malformed api data
+			c.card_name = c.card_name.replace("\\", "").trim();
+			c.skill_disc = SVLookup.escape(c.skill_disc).replace(SVLookup.keywords, "**$&**").trim();
+			c.evo_skill_disc = SVLookup.escape(c.evo_skill_disc).replace(SVLookup.keywords, "**$&**").trim();
 			c.description = SVLookup.escape(c.description);
 			c.evo_description = SVLookup.escape(c.evo_description);
 		}
-
 		console.log(`Starting SVLookup with ${cards.length} cards`);
 		return new SVLookup(cards);
 	}
 	
-	static escape(text: String) { // the api uses like 7 different encodings and it's a trash fire
+	static escape(text: String) { // i hate all of this
 		let r = /\\u([\d\w]{4})/gi;
 		text = text.replace(/<br>/g, "\n")
 			.replace(/\\n/g, "\n")
@@ -93,11 +92,20 @@ class SVLookup implements MessageHandler {
 			});
 		return decodeURIComponent(text as string);
 	}
+
+	private memes(card: Card) {
+		if (card.card_name == "Jolly Rogers") {
+			card.card_name = "Bane Rogers";
+			card.skill_disc = SVLookup.escape("Fanfare: Randomly gain Bane, Bane or Bane.").replace(SVLookup.keywords, "**$&**");
+		}
+		return card;
+	}
 	
-	async sendError(error: String, discordInfo: DiscordExtendedInfo) {
+	async sendError(error: String, description: String, discordInfo: DiscordExtendedInfo) {
 		await discordInfo.message.channel.send({embed: {
 			color: 0xD00000,
-			title: error
+			title: error,
+			description: description
 		}});
 	}
 	
@@ -106,7 +114,7 @@ class SVLookup implements MessageHandler {
 			return;
 		
 		content = content.toLowerCase();
-		const matches = content.match(/{{[a-z-,\?\/\s]+}}/g);
+		const matches = content.match(/{{[a-z0-9-\+',\?\/\s]+}}/g);
 		if (matches == null)
 			return;
 
@@ -115,19 +123,46 @@ class SVLookup implements MessageHandler {
 			let options = "";
 			if (optionMatches != null)
 				options = optionMatches[0].toString();
-			const target = m.slice(2, -2).replace(options + "/", "");
-			
+			let target = m.slice(2, -2).replace(options + "/", "");
 			const discordInfo = info as DiscordExtendedInfo;
 
-			let cards = this._cards.filter(x => x.card_name.toLowerCase().includes(target));
+			if (options == "s") {
+				const results = this._cards.filter(x => x.skill_disc.toLowerCase().includes(target) || x.evo_skill_disc.toLowerCase().includes(target))
+					.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], []);
+				if (results.length == 0) {
+					await this.sendError(`No cards contain the text "${target}".`, "", discordInfo);
+					continue;
+				} else if (results.length == 1) {
+					options = "";
+					target = results[0].card_name.toLowerCase();
+				} else {
+					let embed = new Discord.RichEmbed().setColor(0xF6C7C7);
+					let earlyout = false;
+					for(let c = 0; c <= 7; c++) {
+						const matchTitles = results.filter(x => x.clan == c).reduce<string>((acc, val) => acc + val.card_name + " - ", "").slice(0, -2);
+						if (matchTitles != "") {
+							if (matchTitles.length <= 1024)
+								embed.addField(Craft[c], matchTitles, false);
+							else {
+								await this.sendError("Too many matches. Please be more specific.", "", discordInfo);
+								earlyout = true;
+								break;
+							}
+						}
 
+					}
+					if (!earlyout)
+						await discordInfo.message.channel.send({embed});
+					continue;
+				}
+			}
+
+			let cards = this._cards.filter(x => x.card_name.toLowerCase().includes(target));
 			if (cards.length < 1) {
-				this.sendError(`"${target}" doesn't match any cards. Check for spelling errors?`, discordInfo);
+				await this.sendError(`"${target}" doesn't match any cards. Check for spelling errors?`, "", discordInfo);
 				continue;
 			}
-	
-			const uniqueCards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], [])
-
+			const uniqueCards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], []);
 			let card;
 			if (uniqueCards.length > 1) {
 				const exactMatches = uniqueCards.filter(x => x.card_name.toLowerCase() == target.toLowerCase());
@@ -136,13 +171,9 @@ class SVLookup implements MessageHandler {
 				else {
 					if (uniqueCards.length <= 6) {
 						const matchTitles = uniqueCards.reduce<string>((acc, val) => acc + "- " + val.card_name + "\n", "");
-						await discordInfo.message.channel.send({embed: {
-							color: 0xD00000,
-							description: matchTitles,
-							title: `"${target}" matches multiple cards. Could you be more specific?`
-						}});
+						await this.sendError(`"${target}" matches multiple cards. Could you be more specific?`, matchTitles, discordInfo);
 					} else {
-						this.sendError(`"${target}" matches a large number of cards. Could you be more specific?`, discordInfo);
+						await this.sendError(`"${target}" matches a large number of cards. Could you be more specific?`, "", discordInfo);
 					}
 					continue;
 				}
@@ -150,20 +181,11 @@ class SVLookup implements MessageHandler {
 				card = uniqueCards[0];
 			}
 
-			if (card.card_name == "Jolly Rogers") {
-				card.card_name = "Bane Rogers";
-				card.skill_disc = "Randomly gain Bane, Bane or Bane.";
-			}
+			let copiedCard = Object.assign({}, card);
+			card = this.memes(copiedCard); // keeps meme changes out of card db, not sure if this is 100% the right way
 
 			let cardname = card.card_name; // TODO: figure out why i can't access the card object from filter statements
-
-			let sanitizedTribe = "";
-			if (card.tribe_name != "-")
-				sanitizedTribe = `(${card.tribe_name})`
-
-			const legality = [10001, 10002].includes(card.card_set_id) ? "Unlimited" : "Rotation";
-
-			let embed = new Discord.RichEmbed();
+			let embed = new Discord.RichEmbed().setTitle(card.card_name);
 
 			switch (card.rarity) {
 				case Rarity.Bronze: {
@@ -183,102 +205,84 @@ class SVLookup implements MessageHandler {
 					break;
 				}
 			}
+
 			switch (options) {
 				case "a":
-				case "art":
-					if (card.base_card_id != card.normal_card_id) {
-						let baseID = card.base_card_id; // TODO: same shit
-						card = this._cards.filter(x => x.card_id == baseID)[0];
-						let a = card.card_name.toLowerCase().replace(/\W/g, '');
-						embed.setImage("http://sv.bagoum.com/getRawImage/0/1/" + a);
-					} else {
-						let a = card.card_name.toLowerCase().replace(/\W/g, '');
-						embed.setImage("http://sv.bagoum.com/getRawImage/0/0/" + a);
-						if (cards.filter(x => x.card_name == cardname).length > 1)
-							embed.setFooter(`For alt art, try "aa/${target}".`);
-					}
-					break;
 				case "e":
-				case "evo":
-					if (card.char_type != 1) {
-						this.sendError(`"${card.card_name}" doesn't have evolved art.`, discordInfo);
-						return;
-					}
-					if (card.base_card_id != card.normal_card_id) {
-						let baseID = card.base_card_id; // TODO: same shit
-						card = this._cards.filter(x => x.card_id == baseID)[0];
-						let a = card.card_name.toLowerCase().replace(/\W/g, '');
-						embed.setImage("http://sv.bagoum.com/getRawImage/1/1/" + a);
-					} else {
-						let e = card.card_name.toLowerCase().replace(/\W/g, '');
-						embed.setImage("http://sv.bagoum.com/getRawImage/1/0/" + e);
-						if (cards.filter(x => x.card_name == cardname).length > 1)
-							embed.setFooter(`For alt art, try "aa/${target}".`);
-					}
-
-					break;
 				case "aa":
-				case "altart":
-					if (cards.filter(x => x.card_name == cardname).length < 2) {
-						this.sendError(`"${card.card_name}" doesn't have alternate art.`, discordInfo);
-						return;
+				case "ae": {
+					let evolved = ["e", "ae"].includes(options);
+					let alternate = ["aa", "ae"].includes(options);
+					let matches = cards.filter(x => x.card_name == cardname).length
+					if (card.base_card_id != card.normal_card_id) { // alternate reprints (Ta-G, AGRS, etc)
+						let baseID = card.base_card_id; // TODO: filter syntax
+						card = this._cards.filter(x => x.card_id == baseID)[0];
+						alternate = true;
+					} else if (matches <= 1 && alternate) {
+						await this.sendError(`"${card.card_name}" doesn't have alt art. Try "e/${target}" for evolved art.`, "", discordInfo);
+						continue;
 					}
-					let aa = card.card_name.toLowerCase().replace(/\W/g, '');
-					embed.setImage("http://sv.bagoum.com/getRawImage/0/1/" + aa);
+					if (card.char_type != 1 && evolved) {
+						await this.sendError(`"${card.card_name}" doesn't have evolved art.`, "", discordInfo);
+						continue;
+					}
+					const cleanName = card.card_name.toLowerCase().replace(/\W/g, '');
+					embed.setImage("http://sv.bagoum.com/getRawImage/" + (evolved ? "1" : "0") + "/" + (alternate ? "1" : "0") + "/" + cleanName);
+					if (matches > 1)
+						embed.setFooter(`Alt art available! Use "aa" or "ae"`);
 					break;
-				case "ae":
-				case "ea":
-				case "evoalt":
-				case "altevo":
-					if (cards.filter(x => x.card_name == cardname).length < 2) {
-						this.sendError(`"${card.card_name}" doesn't have alternate art.`, discordInfo);
-						return;
-					}
-					if (card.char_type != 1) {
-						this.sendError(`"${card.card_name}" doesn't have evolved art.`, discordInfo);
-						return;
-					}
-					let ae = card.card_name.toLowerCase().replace(/\W/g, '');
-					embed.setImage("http://sv.bagoum.com/getRawImage/1/1/" + ae);
-					break;
+				}
 				case "f":
-				case "flavor":
-				case "l":
-				case "lore":
-					embed.setThumbnail(`https://shadowverse-portal.com/image/card/en/C_${card.card_id}.png`).setTitle(card.card_name);
+				case "l": {
+					embed.setThumbnail(`https://shadowverse-portal.com/image/card/en/C_${card.card_id}.png`);
 					console.log(card.description);
-					if (card.char_type == 1) {
+					if (card.char_type == 1)
 						embed.setDescription("*" + card.description + "\n\n" + card.evo_description + "*");
-					} else {
+					else
 						embed.setDescription("*" + card.description + "*");
-					}
 					break;
-				default:
-					embed.setTitle(card.card_name + ` - ${card.cost} PP`)
-					.setURL(`http://sv.bagoum.com/cards/${card.card_id}`)
+				}
+				case "": {
+					let legality = "(Rotation)"
+					if (card.card_set_id == Set["Token"])
+						legality = "";
+					else if (card.card_set_id == Set["Darkness Evolved"] || card.card_set_id == Set["Standard"])
+						legality = "(Unlimited)";
+					let sanitizedTribe = (card.tribe_name == "-") ? "" : `(${card.tribe_name})`;
+					embed.setURL(`http://sv.bagoum.com/cards/${card.card_id}`)
 					.setThumbnail(`https://shadowverse-portal.com/image/card/en/C_${card.card_id}.png`)
-					.setFooter(Craft[card.clan] + " " + Rarity[card.rarity] + " - " + Set[card.card_set_id] + " (" + legality + ")");
+					.setFooter(Craft[card.clan] + " " + Rarity[card.rarity] + " - " + Set[card.card_set_id] + " " + legality);
 					switch (card.char_type) {
 						case 1: {
-							embed.setDescription(`${card.atk}/${card.life} ➤ ${card.evo_atk}/${card.evo_life} - Follower ${sanitizedTribe}\n\n${card.skill_disc}`)
-							if (card.evo_skill_disc != card.skill_disc && card.evo_skill_disc != "" && !(card.skill_disc.includes(card.evo_skill_disc)))
+							embed.setDescription(`${card.atk}/${card.life} ➤ ${card.evo_atk}/${card.evo_life} - ${card.cost}PP Follower ${sanitizedTribe}\n\n${card.skill_disc}`)
+							if (card.evo_skill_disc != card.skill_disc && card.evo_skill_disc != "" && !(card.skill_disc.includes(card.evo_skill_disc))) {
 								embed.addField("Evolved", card.evo_skill_disc, true);
+								console.log(card.skill_disc);
+								console.log(card.evo_skill_disc);
+							}
+
 							break;
 						}
-						case 2: {
-							embed.setDescription(`Amulet ${sanitizedTribe}\n\n` + card.skill_disc);
-							break;
-						}
+						case 2:
 						case 3: {
-							embed.setDescription(`Amulet ${sanitizedTribe}\n\n` + card.skill_disc);
+							embed.setDescription(`${card.cost}PP Amulet ${sanitizedTribe}\n\n` + card.skill_disc);
 							break;
 						}
 						case 4: {
-							embed.setDescription(`Spell ${sanitizedTribe}\n\n` + card.skill_disc);
+							embed.setDescription(`${card.cost}PP Spell ${sanitizedTribe}\n\n` + card.skill_disc);
 							break;
 						}
 					}
+					break;
+				}
+				default: {
+					await this.sendError(`"${options}" is not a valid options flag. Try one of these.`, "**a** - Card art\n**e** - Evolved card art\n**aa** - Alternate art\n**ae** - Evolved alternate art\n**f, l** - Flavor text / lore\n**s** - Search card text", discordInfo);
+					continue;
+				}
+
 			}
+
+			embed.setURL(`http://sv.bagoum.com/cards/${card.card_id}`); // done late to account for jank altarts
 	
 			await discordInfo.message.channel.send({embed});
 		}
