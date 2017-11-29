@@ -73,7 +73,7 @@ class Markov implements MessageHandler {
 
 		//drop weird message
 		for (let arg of args) {
-			if (/^[a-zA-Z0-9\.,!\?’'\-\s]*$/.test(arg) == false) {
+			if (/^[a-zA-Z0-9\.,!\?’'\- ]+$/.test(arg) == false) {
 				if (forceResponse)
 					await responder("?");
 				return;
