@@ -21,7 +21,7 @@ export default class YoutubeParser implements MessageHandler {
 			return;
 		}
 
-		const videoIds = matches.reduce((accumulator, value) => {
+		const videoIds = matches.reduce<string[]>((accumulator, value) => {
 			try {
 				const url = new URL(`https://${value}`);
 				const id = url.searchParams.get("v");
