@@ -79,7 +79,8 @@ class SVLookup implements MessageHandler {
 		"antiguy": "hero of antiquity",
 		"pepe": "vagabond frog",
 		"ding dong": "bellringer angel",
-		"awoo": "cerberus"
+		"awoo": "cerberus",
+		"dshift": "dimension shift"
 	};
 	private flagHelp: String = "{{a/cardname}} - display card **a**rt\n" + 
 		"{{e/cardname}} - **e**volved card art\n" +
