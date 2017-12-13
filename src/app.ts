@@ -20,6 +20,7 @@ import ReflexWatcher from "./messageHandlers/reflexWatcher";
 import TestSuccessful from "./messageHandlers/testSuccessful";
 import TrueHit from "./messageHandlers/trueHit";
 import SVLookup from "./messageHandlers/SVLookup";
+import RoleMapper from "./messageHandlers/roleMapper";
 
 import * as Discord from "discord.js";
 import * as fs from "fs";
@@ -229,17 +230,26 @@ async function prepareUstream(handlers: MessageHandler[], websocketUri: string):
 	}
 
 	const services: PersistentService[] = [
-		await TwitchNotifier.create(),
-		await ReflexWatcher.create()
+		await ReflexWatcher.create(),
+		await RoleMapper.create()
 	];
+	const twitchNotifier = await TwitchNotifier.create();
+	if (twitchNotifier != undefined) {
+		services.push(twitchNotifier);
+	}
 
-	const backendTasks = backendPromises.map(p => {
-		return p.then(p => {
-			Promise.all(services.map(s => s.backendInitialized(p.type, p.backend)))
-				.catch(console.error);
-			return p.backgroundPromise;
-		})
-	});
+	const backendTasks = backendPromises.map(p => (async () => {
+		const b = await p;
+		for (const s of services) {
+			try {
+				s.backendInitialized(b.type, b.backend);
+			} catch (err) {
+				console.error(err);
+			}
+		}
+
+		await b.backgroundPromise;
+	})());
 
 	await Promise.all(backendTasks);
 })().catch(reason => {

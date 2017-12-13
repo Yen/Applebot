@@ -42,11 +42,11 @@ async function checkStream(type: string, backend: any, discordChannel: string, c
 	}
 }
 
-function readSettings(): Promise<string> {
-	return new Promise((resolve, reject) => {
+function readSettings(): Promise<string | undefined> {
+	return new Promise(resolve => {
 		fs.readFile("resources/twitchNotifier.json", "utf8", (err, data) => {
 			if (err) {
-				reject(err);
+				resolve();
 			} else {
 				resolve(data);
 			}
@@ -70,6 +70,9 @@ class TwitchNotifier implements PersistentService {
 	
 	public static async create() {
 		const data = await readSettings();
+		if (data == undefined) {
+			return undefined;
+		}
 		const discordChannel = JSON.parse(data).discordChannel;
 		const clientID = JSON.parse(data).clientID;
 		const twitchChannel = JSON.parse(data).twitchChannel;

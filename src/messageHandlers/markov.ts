@@ -45,7 +45,7 @@ class Markov implements MessageHandler {
 	async handleMessage(responder: (content: string) => Promise<void>, content: string, info: ExtendedInfo | undefined) {
 		content = content.toLowerCase();
 		let args = content.split(" ");
-		
+
 		//behavior
 		let train = false;
 		let called = false;
@@ -79,7 +79,7 @@ class Markov implements MessageHandler {
 				return;
 			}
 		}
-		
+
 		//training
 		if (train) {
 			await Promise.all(args
@@ -90,7 +90,7 @@ class Markov implements MessageHandler {
 					this._wordArray[insertedWord.id] = w;
 					this._idArray[w] = insertedWord.id;
 				}));
-	
+
 			await this._data.run("BEGIN TRANSACTION");
 			const trainingPromises = [];
 			const trainingWordCache = args.map(a => this._idArray[a]);
@@ -98,7 +98,7 @@ class Markov implements MessageHandler {
 				const firstWordId = trainingWordCache[i];
 				const secondWordId = trainingWordCache[i + 1];
 				const resultWordId = i < args.length - 3 ? trainingWordCache[i + 2] : null;
-	
+
 				trainingPromises.push(this._trainRelations.run(firstWordId, secondWordId, resultWordId));
 			}
 			await Promise.all(trainingPromises);
@@ -144,7 +144,7 @@ class Markov implements MessageHandler {
 		//selection
 
 		const distances = candidates.map(c => Math.abs(this._targetLength - (c.split(" ").length - 1)));
-		const maxDistance = distances.reduce(function(a, b) {
+		const maxDistance = distances.reduce(function (a, b) {
 			return Math.max(a, b);
 		});
 		const weightedCandidates = []

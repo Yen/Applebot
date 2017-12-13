@@ -37,7 +37,10 @@ async function checkStream(type: string, backend: any, discordChannel: string, s
 	if (type != "DISCORD")
 		return;
 	const client = backend as Discord.Client;
-	const targetChannel = client.channels.filter(x => x.id == discordChannel).first() as Discord.TextChannel;
+	const targetChannel = client.channels.filter(x => x.id == discordChannel).first() as Discord.TextChannel | undefined;
+	if (targetChannel == undefined) {
+		return;
+	}
 	try {
 		const dateThen = Date.now();
 		const request = await fetch(serverURL);
