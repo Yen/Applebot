@@ -3,11 +3,12 @@
     "version": "0.1.0",
     "dependencies": {
         "@types/node": "^8.0.15",
+        "@types/node-fetch": "^1.6.7",
+        "@types/ws": "^3.0.2",
         "discord.js": "^11.1.0",
         "node-fetch": "^1.7.1",
-        "@types/node-fetch": "^1.6.7",
         "ws": "^3.1.0",
-        "@types/ws": "^3.0.2"
+        "sqlite": "^2.9.0"
     },
     "scripts": {
         "start": "node ./bin/app.js"
