@@ -154,8 +154,6 @@ class Markov implements MessageHandler {
 			}
 		}
 
-		console.log(weightedCandidates);
-
 		let response = weightedCandidates[Math.floor(Math.random() * weightedCandidates.length)]; // this might change LOL
 
 		//cleanup
