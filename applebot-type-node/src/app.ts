@@ -19,6 +19,7 @@ import Fightan from "./messageHandlers/fightan";
 import ReflexWatcher from "./messageHandlers/reflexWatcher";
 import TestSuccessful from "./messageHandlers/testSuccessful";
 import TrueHit from "./messageHandlers/trueHit";
+import SVLookup from "./messageHandlers/SVLookup";
 
 import * as Discord from "discord.js";
 import * as fs from "fs";
@@ -211,6 +212,7 @@ async function prepareUstream(handlers: MessageHandler[], websocketUri: string):
 		new Fightan(),
 		new TestSuccessful(),
 		new TrueHit(),
+		await SVLookup.create(),
 		await Markov.create(),
 		await TwitchUptime.create(),
 		await Quotes.create(),
