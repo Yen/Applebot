@@ -33,6 +33,10 @@ interface CardCount {
     [details: string] : number;
 } 
 
+interface Alias {
+	[alias: string] : string;
+}
+
 enum Craft {
     Neutral = 0,
 	Forestcraft,
@@ -64,13 +68,23 @@ enum Set {
 
 class SVLookup implements MessageHandler {
 
-	static keywords = /(Clash:?|Storm:?|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward:?|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
-
 	private _cards: Card[];
+	static keywords = /(Clash:?|Storm:?|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward:?|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
+	static aliases: Alias = {
+		"succ": "support cannon",
+		"jormongoloid": "jormungand",
+		"jungle albert": "jungle warden",
+		"caboose": "carabosse",
+		"weebblader": "ta-g, katana unsheathed",
+		"antiguy": "hero of antiquity",
+		"pepe": "vagabond frog",
+		"ding dong": "bellringer angel",
+		"awoo": "cerberus"
+	};
 	private flagHelp: String = "{{a/cardname}} - display card **a**rt\n" + 
 		"{{e/cardname}} - **e**volved card art\n" +
-		"{{aa/cardname}} - display **a**lternate **a**rt\n" + 
-		"{{ae/cardname}} - **a**lternate **e**volved art\n" + 
+		"{{a2/cardname}} - display **a**lternate **a**rt\n" + 
+		"{{e2/cardname}} - **a**lternate **e**volved art\n" + 
 		"{{l/cardname}} - display **l**ore / flavor text\n" +
 		"{{s/cardname}} - **s**earch card text\n" +
 		"{{d/deckcode}} - Display **d**eck"
@@ -136,7 +150,7 @@ class SVLookup implements MessageHandler {
 			return;
 
 		for (let m of matches) {
-			const optionMatches = m.match(/[a-z]+(?=\/)/);
+			const optionMatches = m.match(/[a-z0-9]+(?=\/)/);
 			let options = "";
 			if (optionMatches != null)
 				options = optionMatches[0].toString();
@@ -189,9 +203,6 @@ class SVLookup implements MessageHandler {
 					const rawJson = await deckRequest.json();
 					const deckJson = rawJson.data.deck;
 					const deck = (deckJson.cards as Card[]);
-					// let counts: CardCount = {};
-					// (deckJson.cards as Card[]).forEach(function(x) { counts[x.card_name] = (counts[x.card_name] || 0)+1; });
-					// let deckString = Object.keys(counts).reduce((acc, val) => acc + `${counts[val]}x ${val}\n`, "");
 					const vials = deck.map(x => x.use_red_ether).reduce((a, b) => a + b, 0);
 					const format = deck.every(x => x.rotation_legal == true) ? "Rotation" : "Unlimited";
 					embed.setFooter(`Deck code expired? Click the link to generate another.`)
@@ -206,6 +217,9 @@ class SVLookup implements MessageHandler {
 				}
 				continue;
 			}
+
+			if (Object.keys(SVLookup.aliases).includes(target))
+				target = SVLookup.aliases[target];
 
 			let cards = this._cards.filter(x => x.card_name.toLowerCase().includes(target));
 			if (cards.length < 1) {
@@ -259,10 +273,10 @@ class SVLookup implements MessageHandler {
 			switch (options) {
 				case "a":
 				case "e":
-				case "aa":
-				case "ae": {
-					let evolved = ["e", "ae"].includes(options);
-					let alternate = ["aa", "ae"].includes(options);
+				case "a2":
+				case "e2": {
+					let evolved = ["e", "e2"].includes(options);
+					let alternate = ["a2", "e2"].includes(options);
 					let matches = cards.filter(x => x.card_name == cardname).length
 					if (card.base_card_id != card.normal_card_id) { // alternate reprints (Ta-G, AGRS, etc)
 						let baseID = card.base_card_id; // TODO: filter syntax
@@ -280,7 +294,7 @@ class SVLookup implements MessageHandler {
 					console.log("http://sv.bagoum.com/getRawImage/" + (evolved ? "1" : "0") + "/" + (alternate ? "1" : "0") + "/" + cleanName + "| ");
 					embed.setImage("http://sv.bagoum.com/getRawImage/" + (evolved ? "1" : "0") + "/" + (alternate ? "1" : "0") + "/" + cleanName);
 					if (matches > 1 && !alternate)
-						embed.setFooter(`Alt art available! Use "aa" or "ae"`);
+						embed.setFooter(`Alt art available! Use "a2" or "e2"`);
 					break;
 				}
 				case "f":
