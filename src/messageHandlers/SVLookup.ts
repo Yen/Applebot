@@ -58,7 +58,7 @@ enum Rarity {
 
 enum Set {
 	"Basic Card" = 10000,
-	"Standard",
+	"Classic",
 	"Darkness Evolved",
 	"Rise of Bahamut",
 	"Tempest of the Gods",
@@ -71,7 +71,7 @@ enum Set {
 class SVLookup implements MessageHandler {
 
 	private _cards: Card[];
-	static keywords = /(Clash:?|Storm:?|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward:?|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
+	static keywords = /(Clash:?|Storm:?|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward:?|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
 	static aliases: Alias = {
 		"succ": "support cannon",
 		"jormongoloid": "jormungand",
@@ -104,7 +104,7 @@ class SVLookup implements MessageHandler {
 			c.evo_skill_disc = SVLookup.escape(c.evo_skill_disc).replace(SVLookup.keywords, "**$&**").replace(/\n\(This card will be treated as .*$/g, "").trim();
 			c.description = SVLookup.escape(c.description);
 			c.evo_description = SVLookup.escape(c.evo_description)
-			if (c.card_set_id == Set["Darkness Evolved"] || c.card_set_id == Set["Standard"]) // this field doesn't exist in the api, maybe implemented later?
+			if (c.card_set_id == Set["Darkness Evolved"] || c.card_set_id == Set["Classic"]) // this field doesn't exist in the api, maybe implemented later?
 				c.rotation_legal = false;
 			else
 				c.rotation_legal = true;
@@ -315,7 +315,6 @@ class SVLookup implements MessageHandler {
 					break;
 				}
 				case "": {
-					console.log(card.card_set_id);
 					if (card.base_card_id != card.normal_card_id) { // alternates now have tossup set IDs, big mess
 						let baseID = card.base_card_id; // TODO: filter syntax
 						let realcard = this._cards.filter(x => x.card_id == baseID)[0];
@@ -337,14 +336,12 @@ class SVLookup implements MessageHandler {
 							if (card.base_card_id != card.normal_card_id) {
 								let baseID = card.base_card_id; // TODO: filter syntax
 								let realcard = this._cards.filter(x => x.card_id == baseID)[0];
-								description += `\n_Promotional reprint of "${realcard.card_name}"_`;
+								description += `\n_This card is treated as ${realcard.card_name}._`;
 							}
 							description += `\n\n${card.skill_disc}`;
 							embed.setDescription(description);
 							if (card.evo_skill_disc != card.skill_disc && card.evo_skill_disc != "" && !(card.skill_disc.includes(card.evo_skill_disc))) {
 								embed.addField("Evolved", card.evo_skill_disc, true);
-								console.log(card.skill_disc);
-								console.log(card.evo_skill_disc);
 							}
 
 							break;
