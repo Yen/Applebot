@@ -99,7 +99,7 @@ class SVLookup implements MessageHandler {
 		"{{e/cardname}} - **e**volved card art\n" +
 		"{{l/cardname}} - display **l**ore / flavor text\n" +
 		"{{s/text}} - **s**earch card text\n" +
-		"{{sr/text}} - **s**earch **r**otation cards" +
+		"{{sr/text}} - **s**earch **r**otation cards\n" +
 		"{{d/deckcode}} - Display **d**eck"
 	
 	private constructor(cards: Card[]) {
