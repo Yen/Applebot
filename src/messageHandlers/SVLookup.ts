@@ -13,6 +13,8 @@ interface Card {
 	tribe_name: string,
 	skill_disc: string,
 	evo_skill_disc: string,
+	pretty_skill_disc: string,
+	pretty_evo_skill_disc: string,
 	cost: number,
 	atk: number,
 	life: number,
@@ -25,8 +27,7 @@ interface Card {
 	evo_description: string,
 	base_card_id: number,
 	normal_card_id: number,
-	use_red_ether: number,
-	rotation_legal: boolean
+	use_red_ether: number
 }
 
 interface CardCount {
@@ -79,15 +80,26 @@ class SVLookup implements MessageHandler {
 		"caboose": "carabosse",
 		"weebblader": "ta-g, katana unsheathed",
 		"antiguy": "hero of antiquity",
+		"heroic guy": "hero of antiquity",
+		"hero of guy": "hero of antiquity",
 		"pepe": "vagabond frog",
 		"ding dong": "bellringer angel",
 		"awoo": "cerberus",
-		"dshift": "dimension shift"
+		"dshift": "dimension shift",
+		"cock": "council of card knights",
+		"desu xd": "deus ex machina",
+		"big dong": "shining bellringer angel",
+		"super dong": "shining bellringer angel",
+		"coc": "call of cocytus",
+		"sybil 2": "ceres of the night",
+		"gas bird": "andrealphus",
+		"peacock": "andrealphus"
 	};
 	private flagHelp: String = "{{a/cardname}} - display card **a**rt\n" + 
 		"{{e/cardname}} - **e**volved card art\n" +
 		"{{l/cardname}} - display **l**ore / flavor text\n" +
-		"{{s/cardname}} - **s**earch card text\n" +
+		"{{s/text}} - **s**earch card text\n" +
+		"{{sr/text}} - **s**earch **r**otation cards" +
 		"{{d/deckcode}} - Display **d**eck"
 	
 	private constructor(cards: Card[]) {
@@ -100,17 +112,20 @@ class SVLookup implements MessageHandler {
 		const cards = json.data.cards as Card[];
 		for (let c of cards) { // keyword highlighting and dealing with malformed api data
 			c.card_name = c.card_name.replace("\\", "").trim();
-			c.skill_disc = SVLookup.escape(c.skill_disc).replace(SVLookup.keywords, "**$&**").trim();
-			c.evo_skill_disc = SVLookup.escape(c.evo_skill_disc).replace(SVLookup.keywords, "**$&**").replace(/\n\(This card will be treated as .*$/g, "").trim();
+			c.pretty_skill_disc = SVLookup.escape(c.skill_disc).replace(SVLookup.keywords, "**$&**").trim();
+			c.pretty_evo_skill_disc = SVLookup.escape(c.evo_skill_disc).replace(SVLookup.keywords, "**$&**").replace(/\n\(This card will be treated as .*$/g, "").trim();
 			c.description = SVLookup.escape(c.description);
 			c.evo_description = SVLookup.escape(c.evo_description)
-			if (c.card_set_id == Set["Darkness Evolved"] || c.card_set_id == Set["Classic"]) // this field doesn't exist in the api, maybe implemented later?
-				c.rotation_legal = false;
-			else
-				c.rotation_legal = true;
 		}
 		console.log(`Starting SVLookup with ${cards.length} cards`);
 		return new SVLookup(cards);
+	}
+
+	static rotation_legal(c: Card) {
+		if (c.card_set_id == Set["Darkness Evolved"] || c.card_set_id == Set["Classic"]) // this field doesn't exist in the api, maybe implemented later?
+			return false;
+		else
+			return true;
 	}
 	
 	static escape(text: String) { // i hate all of this
@@ -163,9 +178,11 @@ class SVLookup implements MessageHandler {
 				continue;
 			}
 
-			if (options == "s") {
-				const results = this._cards.filter(x => x.skill_disc.toLowerCase().includes(target) || x.evo_skill_disc.toLowerCase().includes(target))
+			if (options == "s" || options == "sr") {
+				let results = this._cards.filter(x => x.skill_disc.toLowerCase().includes(target) || x.evo_skill_disc.toLowerCase().includes(target))
 					.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], []);
+				if (options == "sr")
+					results = results.filter(x => SVLookup.rotation_legal(x));
 				if (results.length == 0) {
 					await this.sendError(`No cards contain the text "${target}".`, "", discordInfo);
 					continue;
@@ -205,7 +222,7 @@ class SVLookup implements MessageHandler {
 					const deckJson = rawJson.data.deck;
 					const deck = (deckJson.cards as Card[]);
 					const vials = deck.map(x => x.use_red_ether).reduce((a, b) => a + b, 0);
-					const format = deck.every(x => x.rotation_legal == true) ? "Rotation" : "Unlimited";
+					const format = deck.every(x => SVLookup.rotation_legal(x) == true) ? "Rotation" : "Unlimited";
 					embed.setFooter(`Deck code expired? Click the link to generate another.`)
 						.setTitle( `${Craft[deckJson.clan]} Deck - ${target}`)
 						.setFooter(`${format} Format - ${vials} vials - Click link to generate new deck code`)
@@ -315,16 +332,18 @@ class SVLookup implements MessageHandler {
 					break;
 				}
 				case "": {
+					let legality = "(Rotation)"
 					if (card.base_card_id != card.normal_card_id) { // alternates now have tossup set IDs, big mess
 						let baseID = card.base_card_id; // TODO: filter syntax
 						let realcard = this._cards.filter(x => x.card_id == baseID)[0];
-						card.rotation_legal = realcard.rotation_legal;
 						card.card_set_id = realcard.card_set_id;
+						if (SVLookup.rotation_legal(realcard) == false)
+							legality = "(Unlimited)";
+					} else {
+						if (SVLookup.rotation_legal(card) == false)
+							legality = "(Unlimited)";
 					}
-					let legality = "(Rotation)"
-					if (card.rotation_legal == false)
-						legality = "(Unlimited)";
-					else if (card.card_set_id == Set["Token"])
+					if (card.card_set_id == Set["Token"])
 						legality = "";
 					let sanitizedTribe = (card.tribe_name == "-") ? "" : `(${card.tribe_name})`;
 					embed.setURL(`http://sv.bagoum.com/cards/${card.card_id}`)
@@ -338,21 +357,21 @@ class SVLookup implements MessageHandler {
 								let realcard = this._cards.filter(x => x.card_id == baseID)[0];
 								description += `\n_This card is treated as ${realcard.card_name}._`;
 							}
-							description += `\n\n${card.skill_disc}`;
+							description += `\n\n${card.pretty_skill_disc}`;
 							embed.setDescription(description);
-							if (card.evo_skill_disc != card.skill_disc && card.evo_skill_disc != "" && !(card.skill_disc.includes(card.evo_skill_disc))) {
-								embed.addField("Evolved", card.evo_skill_disc, true);
+							if (card.pretty_evo_skill_disc != card.pretty_skill_disc && card.pretty_evo_skill_disc != "" && !(card.pretty_skill_disc.includes(card.pretty_evo_skill_disc))) {
+								embed.addField("Evolved", card.pretty_evo_skill_disc, true);
 							}
 
 							break;
 						}
 						case 2:
 						case 3: {
-							embed.setDescription(`${card.cost}PP Amulet ${sanitizedTribe}\n\n` + card.skill_disc);
+							embed.setDescription(`${card.cost}PP Amulet ${sanitizedTribe}\n\n` + card.pretty_skill_disc);
 							break;
 						}
 						case 4: {
-							embed.setDescription(`${card.cost}PP Spell ${sanitizedTribe}\n\n` + card.skill_disc);
+							embed.setDescription(`${card.cost}PP Spell ${sanitizedTribe}\n\n` + card.pretty_skill_disc);
 							break;
 						}
 					}
