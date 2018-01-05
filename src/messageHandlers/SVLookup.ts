@@ -91,7 +91,7 @@ class SVLookup implements MessageHandler {
 		"big dong": "shining bellringer angel",
 		"super dong": "shining bellringer angel",
 		"coc": "call of cocytus",
-		"sybil 2": "ceres of the night",
+		"sibyl 2": "ceres of the night",
 		"gas bird": "andrealphus",
 		"peacock": "andrealphus"
 	};
