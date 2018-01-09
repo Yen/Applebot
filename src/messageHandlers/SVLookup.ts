@@ -13,6 +13,8 @@ interface Card {
 	tribe_name: string,
 	skill_disc: string,
 	evo_skill_disc: string,
+	pretty_skill_disc: string,
+	pretty_evo_skill_disc: string,
 	cost: number,
 	atk: number,
 	life: number,
@@ -25,13 +27,16 @@ interface Card {
 	evo_description: string,
 	base_card_id: number,
 	normal_card_id: number,
-	use_red_ether: number,
-	rotation_legal: boolean
+	use_red_ether: number
 }
 
 interface CardCount {
     [details: string] : number;
 } 
+
+interface Alias {
+	[alias: string] : string;
+}
 
 enum Craft {
     Neutral = 0,
@@ -41,7 +46,8 @@ enum Craft {
 	Dragoncraft,
 	Shadowcraft,
 	Bloodcraft,
-	Havencraft
+	Havencraft,
+	Portalcraft
 }
 
 enum Rarity {
@@ -53,26 +59,47 @@ enum Rarity {
 
 enum Set {
 	"Basic Card" = 10000,
-	"Standard",
+	"Classic",
 	"Darkness Evolved",
 	"Rise of Bahamut",
 	"Tempest of the Gods",
 	"Wonderland Dreams",
 	"Starforged Legends",
+	"Chronogenesis",
 	"Token" = 90000
 }
 
 class SVLookup implements MessageHandler {
 
-	static keywords = /(Clash:?|Storm:?|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward:?|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
-
 	private _cards: Card[];
+	static keywords = /(Clash:?|Storm:?|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward:?|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
+	static aliases: Alias = {
+		"succ": "support cannon",
+		"jormongoloid": "jormungand",
+		"jungle albert": "jungle warden",
+		"caboose": "carabosse",
+		"weebblader": "ta-g, katana unsheathed",
+		"antiguy": "hero of antiquity",
+		"heroic guy": "hero of antiquity",
+		"hero of guy": "hero of antiquity",
+		"pepe": "vagabond frog",
+		"ding dong": "bellringer angel",
+		"awoo": "cerberus",
+		"dshift": "dimension shift",
+		"cock": "council of card knights",
+		"desu xd": "deus ex machina",
+		"big dong": "shining bellringer angel",
+		"super dong": "shining bellringer angel",
+		"coc": "call of cocytus",
+		"sibyl 2": "ceres of the night",
+		"gas bird": "andrealphus",
+		"peacock": "andrealphus"
+	};
 	private flagHelp: String = "{{a/cardname}} - display card **a**rt\n" + 
 		"{{e/cardname}} - **e**volved card art\n" +
-		"{{aa/cardname}} - display **a**lternate **a**rt\n" + 
-		"{{ae/cardname}} - **a**lternate **e**volved art\n" + 
 		"{{l/cardname}} - display **l**ore / flavor text\n" +
-		"{{s/cardname}} - **s**earch card text\n" +
+		"{{s/text}} - **s**earch card text\n" +
+		"{{sr/text}} - **s**earch **r**otation cards\n" +
 		"{{d/deckcode}} - Display **d**eck"
 	
 	private constructor(cards: Card[]) {
@@ -85,17 +112,20 @@ class SVLookup implements MessageHandler {
 		const cards = json.data.cards as Card[];
 		for (let c of cards) { // keyword highlighting and dealing with malformed api data
 			c.card_name = c.card_name.replace("\\", "").trim();
-			c.skill_disc = SVLookup.escape(c.skill_disc).replace(SVLookup.keywords, "**$&**").trim();
-			c.evo_skill_disc = SVLookup.escape(c.evo_skill_disc).replace(SVLookup.keywords, "**$&**").trim();
+			c.pretty_skill_disc = SVLookup.escape(c.skill_disc).replace(SVLookup.keywords, "**$&**").trim();
+			c.pretty_evo_skill_disc = SVLookup.escape(c.evo_skill_disc).replace(SVLookup.keywords, "**$&**").replace(/\n\(This card will be treated as .*$/g, "").trim();
 			c.description = SVLookup.escape(c.description);
-			c.evo_description = SVLookup.escape(c.evo_description);
-			if (c.card_set_id == Set["Darkness Evolved"] || c.card_set_id == Set["Standard"]) // this field doesn't exist in the api, maybe implemented later?
-				c.rotation_legal = false;
-			else
-				c.rotation_legal = true;
+			c.evo_description = SVLookup.escape(c.evo_description)
 		}
 		console.log(`Starting SVLookup with ${cards.length} cards`);
 		return new SVLookup(cards);
+	}
+
+	static rotation_legal(c: Card) {
+		if (c.card_set_id == Set["Darkness Evolved"] || c.card_set_id == Set["Classic"]) // this field doesn't exist in the api, maybe implemented later?
+			return false;
+		else
+			return true;
 	}
 	
 	static escape(text: String) { // i hate all of this
@@ -136,7 +166,7 @@ class SVLookup implements MessageHandler {
 			return;
 
 		for (let m of matches) {
-			const optionMatches = m.match(/[a-z]+(?=\/)/);
+			const optionMatches = m.match(/[a-z0-9]+(?=\/)/);
 			let options = "";
 			if (optionMatches != null)
 				options = optionMatches[0].toString();
@@ -148,9 +178,11 @@ class SVLookup implements MessageHandler {
 				continue;
 			}
 
-			if (options == "s") {
-				const results = this._cards.filter(x => x.skill_disc.toLowerCase().includes(target) || x.evo_skill_disc.toLowerCase().includes(target))
+			if (options == "s" || options == "sr") {
+				let results = this._cards.filter(x => x.skill_disc.toLowerCase().includes(target) || x.evo_skill_disc.toLowerCase().includes(target))
 					.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], []);
+				if (options == "sr")
+					results = results.filter(x => SVLookup.rotation_legal(x));
 				if (results.length == 0) {
 					await this.sendError(`No cards contain the text "${target}".`, "", discordInfo);
 					continue;
@@ -160,7 +192,7 @@ class SVLookup implements MessageHandler {
 				} else {
 					let embed = new Discord.RichEmbed().setColor(0xF6C7C7);
 					let earlyout = false;
-					for(let c = 0; c <= 7; c++) {
+					for(let c = 0; c <= 8; c++) {
 						const matchTitles = results.filter(x => x.clan == c).reduce<string>((acc, val) => acc + val.card_name + " - ", "").slice(0, -2);
 						if (matchTitles != "") {
 							if (matchTitles.length <= 1024)
@@ -189,11 +221,8 @@ class SVLookup implements MessageHandler {
 					const rawJson = await deckRequest.json();
 					const deckJson = rawJson.data.deck;
 					const deck = (deckJson.cards as Card[]);
-					// let counts: CardCount = {};
-					// (deckJson.cards as Card[]).forEach(function(x) { counts[x.card_name] = (counts[x.card_name] || 0)+1; });
-					// let deckString = Object.keys(counts).reduce((acc, val) => acc + `${counts[val]}x ${val}\n`, "");
 					const vials = deck.map(x => x.use_red_ether).reduce((a, b) => a + b, 0);
-					const format = deck.every(x => x.rotation_legal == true) ? "Rotation" : "Unlimited";
+					const format = deck.every(x => SVLookup.rotation_legal(x) == true) ? "Rotation" : "Unlimited";
 					embed.setFooter(`Deck code expired? Click the link to generate another.`)
 						.setTitle( `${Craft[deckJson.clan]} Deck - ${target}`)
 						.setFooter(`${format} Format - ${vials} vials - Click link to generate new deck code`)
@@ -206,6 +235,9 @@ class SVLookup implements MessageHandler {
 				}
 				continue;
 			}
+
+			if (Object.keys(SVLookup.aliases).includes(target))
+				target = SVLookup.aliases[target];
 
 			let cards = this._cards.filter(x => x.card_name.toLowerCase().includes(target));
 			if (cards.length < 1) {
@@ -259,17 +291,23 @@ class SVLookup implements MessageHandler {
 			switch (options) {
 				case "a":
 				case "e":
-				case "aa":
-				case "ae": {
-					let evolved = ["e", "ae"].includes(options);
-					let alternate = ["aa", "ae"].includes(options);
+				case "a2":
+				case "e2":
+				case "a3":
+				case "e3": {
+					let evolved = ["e", "e2", "e3"].includes(options);
+					let alternate = 0;
+					if (["a2", "e2"].includes(options))
+						alternate = 1;
+					if (["a3", "e3"].includes(options))
+						alternate = 2;
 					let matches = cards.filter(x => x.card_name == cardname).length
 					if (card.base_card_id != card.normal_card_id) { // alternate reprints (Ta-G, AGRS, etc)
 						let baseID = card.base_card_id; // TODO: filter syntax
 						card = this._cards.filter(x => x.card_id == baseID)[0];
-						alternate = true;
-					} else if (matches <= 1 && alternate) {
-						await this.sendError(`"${card.card_name}" doesn't have alt art. Try "e/${target}" for evolved art.`, "", discordInfo);
+						alternate = 1;
+					} else if (alternate != 0 && matches <= alternate) {
+						await this.sendError(`Couldn't find additional art for "${card.card_name}".`, "", discordInfo);
 						continue;
 					}
 					if (card.char_type != 1 && evolved) {
@@ -277,16 +315,16 @@ class SVLookup implements MessageHandler {
 						continue;
 					}
 					const cleanName = card.card_name.toLowerCase().replace(/\W/g, '').trim();
-					console.log("http://sv.bagoum.com/getRawImage/" + (evolved ? "1" : "0") + "/" + (alternate ? "1" : "0") + "/" + cleanName + "| ");
-					embed.setImage("http://sv.bagoum.com/getRawImage/" + (evolved ? "1" : "0") + "/" + (alternate ? "1" : "0") + "/" + cleanName);
+					embed.setImage("http://sv.bagoum.com/getRawImage/" + (evolved ? "1" : "0") + "/" + (alternate) + "/" + cleanName);
 					if (matches > 1 && !alternate)
-						embed.setFooter(`Alt art available! Use "aa" or "ae"`);
+						embed.setFooter(`Alt art available! Try "a2" or "e2"`);
+					if (matches > 2 && alternate == 1)
+						embed.setFooter(`Additional art available! Try "a3" or "e3"`);
 					break;
 				}
 				case "f":
 				case "l": {
 					embed.setThumbnail(`https://shadowverse-portal.com/image/card/en/C_${card.card_id}.png`);
-					console.log(card.description);
 					if (card.char_type == 1)
 						embed.setDescription("*" + card.description + "\n\n" + card.evo_description + "*");
 					else
@@ -295,9 +333,17 @@ class SVLookup implements MessageHandler {
 				}
 				case "": {
 					let legality = "(Rotation)"
-					if (card.rotation_legal == false)
-						legality = "(Unlimited)";
-					else if (card.card_set_id == Set["Token"])
+					if (card.base_card_id != card.normal_card_id) { // alternates now have tossup set IDs, big mess
+						let baseID = card.base_card_id; // TODO: filter syntax
+						let realcard = this._cards.filter(x => x.card_id == baseID)[0];
+						card.card_set_id = realcard.card_set_id;
+						if (SVLookup.rotation_legal(realcard) == false)
+							legality = "(Unlimited)";
+					} else {
+						if (SVLookup.rotation_legal(card) == false)
+							legality = "(Unlimited)";
+					}
+					if (card.card_set_id == Set["Token"])
 						legality = "";
 					let sanitizedTribe = (card.tribe_name == "-") ? "" : `(${card.tribe_name})`;
 					embed.setURL(`http://sv.bagoum.com/cards/${card.card_id}`)
@@ -305,22 +351,27 @@ class SVLookup implements MessageHandler {
 					.setFooter(Craft[card.clan] + " " + Rarity[card.rarity] + " - " + Set[card.card_set_id] + " " + legality);
 					switch (card.char_type) {
 						case 1: {
-							embed.setDescription(`${card.atk}/${card.life} ➤ ${card.evo_atk}/${card.evo_life} - ${card.cost}PP Follower ${sanitizedTribe}\n\n${card.skill_disc}`)
-							if (card.evo_skill_disc != card.skill_disc && card.evo_skill_disc != "" && !(card.skill_disc.includes(card.evo_skill_disc))) {
-								embed.addField("Evolved", card.evo_skill_disc, true);
-								console.log(card.skill_disc);
-								console.log(card.evo_skill_disc);
+							let description = `${card.atk}/${card.life} ➤ ${card.evo_atk}/${card.evo_life} - ${card.cost}PP Follower ${sanitizedTribe}`;
+							if (card.base_card_id != card.normal_card_id) {
+								let baseID = card.base_card_id; // TODO: filter syntax
+								let realcard = this._cards.filter(x => x.card_id == baseID)[0];
+								description += `\n_This card is treated as ${realcard.card_name}._`;
+							}
+							description += `\n\n${card.pretty_skill_disc}`;
+							embed.setDescription(description);
+							if (card.pretty_evo_skill_disc != card.pretty_skill_disc && card.pretty_evo_skill_disc != "" && !(card.pretty_skill_disc.includes(card.pretty_evo_skill_disc))) {
+								embed.addField("Evolved", card.pretty_evo_skill_disc, true);
 							}
 
 							break;
 						}
 						case 2:
 						case 3: {
-							embed.setDescription(`${card.cost}PP Amulet ${sanitizedTribe}\n\n` + card.skill_disc);
+							embed.setDescription(`${card.cost}PP Amulet ${sanitizedTribe}\n\n` + card.pretty_skill_disc);
 							break;
 						}
 						case 4: {
-							embed.setDescription(`${card.cost}PP Spell ${sanitizedTribe}\n\n` + card.skill_disc);
+							embed.setDescription(`${card.cost}PP Spell ${sanitizedTribe}\n\n` + card.pretty_skill_disc);
 							break;
 						}
 					}
