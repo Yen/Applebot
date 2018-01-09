@@ -97,7 +97,7 @@ class Markov implements MessageHandler {
 			for (let i = 0; i < args.length - 2; i++) {
 				const firstWordId = trainingWordCache[i];
 				const secondWordId = trainingWordCache[i + 1];
-				const resultWordId = i < args.length - 3 ? trainingWordCache[i + 2] : null;
+				const resultWordId = i < args.length - 2 ? trainingWordCache[i + 2] : null;
 
 				trainingPromises.push(this._trainRelations.run(firstWordId, secondWordId, resultWordId));
 			}
@@ -123,7 +123,8 @@ class Markov implements MessageHandler {
 						break;
 					sequence.push(nextQuery.result_word_id);
 				}
-				sequence.pop();
+				if (sequence[sequence.length - 1] == null)
+					sequence.pop();
 				let message = [];
 				for (let id of sequence) {
 					message.push(this._wordArray[id]);
