@@ -72,11 +72,12 @@ enum Set {
 class SVLookup implements MessageHandler {
 
 	private _cards: Card[];
-	static keywords = /(Clash:?|Storm:?|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward:?|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
+	static keywords = /(Clash:?|Storm(?![A-Za-z])|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward(?![A-Za-z])|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
 	static aliases: Alias = {
 		"succ": "support cannon",
 		"jormongoloid": "jormungand",
 		"jungle albert": "jungle warden",
+		"shadow albert": "underworld ruler aisha",
 		"caboose": "carabosse",
 		"weebblader": "ta-g, katana unsheathed",
 		"antiguy": "hero of antiquity",
@@ -93,7 +94,17 @@ class SVLookup implements MessageHandler {
 		"coc": "call of cocytus",
 		"sibyl 2": "ceres of the night",
 		"gas bird": "andrealphus",
-		"peacock": "andrealphus"
+		"peacock": "andrealphus",
+		"tempest lancer": "lancer of the tempest",
+		"tribunal of rigged evil": "tribunal of good and evil",
+		"ptp": "path to purgatory",
+		"bnb": "beauty and the beast",
+		"the wife": "hot garbage",
+		"aurelia alter": "darksaber melissa",
+		"ffg": "fall from grace",
+		"satan": "prince of darkness",
+		"stan": "prince of darkness"
+
 	};
 	private flagHelp: String = "{{a/cardname}} - display card **a**rt\n" + 
 		"{{e/cardname}} - **e**volved card art\n" +
@@ -179,7 +190,11 @@ class SVLookup implements MessageHandler {
 			}
 
 			if (options == "s" || options == "sr") {
-				let results = this._cards.filter(x => x.skill_disc.toLowerCase().includes(target) || x.evo_skill_disc.toLowerCase().includes(target))
+				let results = this._cards.filter(x => 
+						x.skill_disc.toLowerCase().includes(target) ||
+						x.evo_skill_disc.toLowerCase().includes(target) ||
+						x.tribe_name.toLowerCase().includes(target) || 
+						x.card_name.toLowerCase().includes(target))
 					.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], []);
 				if (options == "sr")
 					results = results.filter(x => SVLookup.rotation_legal(x));
@@ -203,7 +218,6 @@ class SVLookup implements MessageHandler {
 								break;
 							}
 						}
-
 					}
 					if (!earlyout)
 						await discordInfo.message.channel.send({embed});
