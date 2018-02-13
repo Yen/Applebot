@@ -72,7 +72,7 @@ enum Set {
 class SVLookup implements MessageHandler {
 
 	private _cards: Card[];
-	static keywords = /(Clash:?|Storm(?![A-Za-z])|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward(?![A-Za-z])|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
+	static keywords = /(Clash:?|Storm(?![A-Za-z])|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward(?![A-Za-z])|Ambush(?![A-Za-z])|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
 	static aliases: Alias = {
 		"succ": "support cannon",
 		"jormongoloid": "jormungand",
