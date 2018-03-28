@@ -178,16 +178,14 @@ class SVLookup implements MessageHandler {
 			return;
 
 		for (let m of matches) {
-			const optionMatches = m.match(/^[a-z0-9]{1,2}(?=\/)/);
 			let target = m.slice(2, -2)
+			const optionMatches = target.match(/^[a-z0-9]{1,2}(?=\/)/);
 			let options = "";
 			if (optionMatches != null) {
 				options = optionMatches[0].toString();
-				m = m.replace(options + "/", "");
+				target = target.replace(options + "/", "");
 			}
 
-			console.log(matches);
-			console.log(target);
 			const discordInfo = info as DiscordExtendedInfo;
 
 			if ((target == "help" || target == "?") && options == "") {
