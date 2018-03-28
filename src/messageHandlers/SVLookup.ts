@@ -66,13 +66,14 @@ enum Set {
 	"Wonderland Dreams",
 	"Starforged Legends",
 	"Chronogenesis",
+	"Dawnbreak, Nightedge",
 	"Token" = 90000
 }
 
 class SVLookup implements MessageHandler {
 
 	private _cards: Card[];
-	static keywords = /(Clash:?|Storm(?![A-Za-z])|Rush:?|Bane:?|Drain:?|Burial Rite:?|Spellboost:?|Ward(?![A-Za-z])|Ambush(?![A-Za-z])|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Reanimate \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
+	static keywords = /(Choose:|Clash:?|Storm(?![A-Za-z])|Rush:?|Bane:?|Drain:?|Burial Rite:?|Spellboost:?|Ward(?![A-Za-z])|Ambush(?![A-Za-z])|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Reanimate \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
 	static aliases: Alias = {
 		"succ": "support cannon",
 		"jormongoloid": "jormungand",
@@ -133,7 +134,7 @@ class SVLookup implements MessageHandler {
 	}
 
 	static rotation_legal(c: Card) {
-		if (c.card_set_id == Set["Darkness Evolved"] || c.card_set_id == Set["Classic"]) // this field doesn't exist in the api, maybe implemented later?
+		if (c.card_set_id == Set["Darkness Evolved"] || c.card_set_id == Set["Classic"] || c.card_set_id == Set["Rise of Bahamut"]) // this field doesn't exist in the api, maybe implemented later?
 			return false;
 		else
 			return true;
@@ -154,7 +155,7 @@ class SVLookup implements MessageHandler {
 	private memes(card: Card) {
 		if (card.card_name == "Jolly Rogers") {
 			card.card_name = "Bane Rogers";
-			card.skill_disc = SVLookup.escape("Fanfare: Randomly gain Bane, Bane or Bane.").replace(SVLookup.keywords, "**$&**");
+			card.pretty_skill_disc = SVLookup.escape("Fanfare: Randomly gain Bane, Bane or Bane.").replace(SVLookup.keywords, "**$&**");
 		}
 		return card;
 	}
@@ -177,11 +178,16 @@ class SVLookup implements MessageHandler {
 			return;
 
 		for (let m of matches) {
-			const optionMatches = m.match(/[a-z0-9]+(?=\/)/);
+			const optionMatches = m.match(/^[a-z0-9]{1,2}(?=\/)/);
+			let target = m.slice(2, -2)
 			let options = "";
-			if (optionMatches != null)
+			if (optionMatches != null) {
 				options = optionMatches[0].toString();
-			let target = m.slice(2, -2).replace(options + "/", "");
+				m = m.replace(options + "/", "");
+			}
+
+			console.log(matches);
+			console.log(target);
 			const discordInfo = info as DiscordExtendedInfo;
 
 			if ((target == "help" || target == "?") && options == "") {
@@ -373,7 +379,10 @@ class SVLookup implements MessageHandler {
 							}
 							description += `\n\n${card.pretty_skill_disc}`;
 							embed.setDescription(description);
-							if (card.pretty_evo_skill_disc != card.pretty_skill_disc && card.pretty_evo_skill_disc != "" && !(card.pretty_skill_disc.includes(card.pretty_evo_skill_disc))) {
+							if (card.pretty_evo_skill_disc != card.pretty_skill_disc
+								&& card.pretty_evo_skill_disc != ""
+								&& !(card.pretty_skill_disc.includes(card.pretty_evo_skill_disc))
+								&& card.pretty_evo_skill_disc != "(Same as the unevolved form.)") {
 								embed.addField("Evolved", card.pretty_evo_skill_disc, true);
 							}
 
