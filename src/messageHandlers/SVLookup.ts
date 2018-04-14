@@ -104,7 +104,8 @@ class SVLookup implements MessageHandler {
 		"aurelia alter": "darksaber melissa",
 		"ffg": "fall from grace",
 		"satan": "prince of darkness",
-		"stan": "prince of darkness"
+		"stan": "prince of darkness",
+		"gun": "god bullet golem"
 
 	};
 	private flagHelp: String = "{{a/cardname}} - display card **a**rt\n" + 
@@ -173,7 +174,7 @@ class SVLookup implements MessageHandler {
 			return;
 		
 		content = content.toLowerCase();
-		const matches = content.match(/{{[a-z0-9-\+',\?\/\s]+}}/g);
+		const matches = content.match(/{{[a-z0-9-\+',\?\/\s\(\)]+}}/g);
 		if (matches == null)
 			return;
 
@@ -266,9 +267,13 @@ class SVLookup implements MessageHandler {
 			let card;
 			if (uniqueCards.length > 1) {
 				const exactMatches = uniqueCards.filter(x => x.card_name.toLowerCase() == target.toLowerCase());
+				const fullWordMatches = uniqueCards.filter(x => x.card_name.toLowerCase().match(`(^|\\s)${target}($|\\s)`));
+				console.log(fullWordMatches);
+				if (fullWordMatches.length == 1)
+					card = fullWordMatches[0];
 				if (exactMatches.length == 1)
 					card = exactMatches[0];
-				else {
+				if (!card) {
 					if (uniqueCards.length <= 6) {
 						const matchTitles = uniqueCards.reduce<string>((acc, val) => acc + "- " + val.card_name + "\n", "");
 						await this.sendError(`"${target}" matches multiple cards. Could you be more specific?`, matchTitles, discordInfo);
