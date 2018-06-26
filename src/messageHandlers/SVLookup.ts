@@ -299,6 +299,9 @@ class SVLookup implements MessageHandler {
 				console.log(cards);
 				if (!card) {
 					if (cards.length <= 6) {
+						cards = cards.filter((obj, pos, arr) => {
+							return arr.map(x => x.card_name).indexOf(obj.card_name) === pos;
+						});;
 						const matchTitles = cards.reduce<string>((acc, val) => acc + "- " + val.card_name + " _(" +  Set[val.card_set_id] + ")_\n", "");
 						await this.sendError(`"${target}" matches multiple cards. Could you be more specific?`, matchTitles, discordInfo);
 					} else {
@@ -441,7 +444,7 @@ class SVLookup implements MessageHandler {
 						}
 					}
 					if (card.restricted_count < 3)
-						embed.description = `_Restricted! Limit ${card.restricted_count} cop${(card.restricted_count > 1 ? "ies" : "y")} per deck._\n` + embed.description;
+						embed.description = `_Restricted${card.format_type ? " in Unlimited!" : "!"} Limit ${card.restricted_count} cop${(card.restricted_count > 1 ? "ies" : "y")} per deck._\n` + embed.description;
 					break;
 				}
 				default: {
