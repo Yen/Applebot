@@ -27,7 +27,8 @@ interface Card {
 	evo_description: string,
 	base_card_id: number,
 	normal_card_id: number,
-	use_red_ether: number
+	use_red_ether: number,
+	format_type: boolean
 }
 
 interface CardCount {
@@ -137,15 +138,7 @@ class SVLookup implements MessageHandler {
 	}
 
 	static rotation_legal(c: Card) {
-		if (c.card_set_id == Set["Wonderland Dreams"] || 
-			c.card_set_id == Set["Starforged Legends"] ||
-			c.card_set_id == Set["Chronogenesis"] ||
-			c.card_set_id == Set["Dawnbreak, Nightedge"] ||
-		    c.card_set_id == Set["Chronogenesis"] ||
-			c.card_set_id == Set["Brigade of the Sky"] ||
-			c.card_set_id == Set["Basic Card"]) // this field doesn't exist in the api, maybe implemented later?
-			return true;
-		return false;
+		return c.format_type;
 	}
 	
 	static escape(text: String) { // i hate all of this
@@ -277,16 +270,23 @@ class SVLookup implements MessageHandler {
 				if (fullword.length > 0)
 					cards = fullword;
 				console.log(cards);
-				if (cards.length > 1)
+				if (cards.length > 1) {
+					let provisional = cards.filter(x => x.card_name.toLowerCase() == target);
+					if (provisional.length > 0)
+						cards = provisional;
+				}
+				if (cards.every(x => x.card_name == cards[0].card_name)) {
+					if (cards.length > 1)
 					cards = cards.filter(x => x.card_set_id != 90000);
-				console.log(cards);
-				cards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_set_id > val.card_set_id) ? acc : [val], []);
+					console.log(cards);
+					cards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_set_id > val.card_set_id) ? acc : [val], []);
+				}
 				if (cards.length == 1)
 					card = cards[0];
 				console.log(cards);
 				if (!card) {
 					if (cards.length <= 6) {
-						const matchTitles = cards.reduce<string>((acc, val) => acc + "- " + val.card_name + "\n", "");
+						const matchTitles = cards.reduce<string>((acc, val) => acc + "- " + val.card_name + " _(" +  Set[val.card_set_id] + ")_\n", "");
 						await this.sendError(`"${target}" matches multiple cards. Could you be more specific?`, matchTitles, discordInfo);
 					} else {
 						await this.sendError(`"${target}" matches a large number of cards. Could you be more specific?`, "", discordInfo);
@@ -335,11 +335,16 @@ class SVLookup implements MessageHandler {
 						alternate = 1;
 					if (["a3", "e3"].includes(options))
 						alternate = 2;
-					let matches = cards.filter(x => x.card_name == cardname).length
+					let matches = this._cards.filter(x => x.card_name == cardname).length
+					console.log("FUCK");
+					console.log(matches);
 					if (card.base_card_id != card.normal_card_id) { // alternate reprints (Ta-G, AGRS, etc)
 						let baseID = card.base_card_id; // TODO: filter syntax
-						card = this._cards.filter(x => x.card_id == baseID)[0];
-						alternate = 1;
+						let newcard = this._cards.filter(x => x.card_id == baseID)[0];
+						if (newcard.card_name != card.card_name) {
+							alternate = 1;
+							card = newcard;
+						}
 					} else if (alternate != 0 && matches <= alternate) {
 						await this.sendError(`Couldn't find additional art for "${card.card_name}".`, "", discordInfo);
 						continue;
