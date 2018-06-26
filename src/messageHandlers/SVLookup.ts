@@ -67,13 +67,14 @@ enum Set {
 	"Starforged Legends",
 	"Chronogenesis",
 	"Dawnbreak, Nightedge",
+	"Brigade of the Sky",
 	"Token" = 90000
 }
 
 class SVLookup implements MessageHandler {
 
 	private _cards: Card[];
-	static keywords = /(Choose:|Clash:?|Storm(?![A-Za-z])|Rush:?|Bane:?|Drain:?|Burial Rite:?|Spellboost:?|Ward(?![A-Za-z])|Ambush(?![A-Za-z])|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Reanimate \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
+	static keywords = /(Choose:|Choose -|Clash:?|Storm(?![A-Za-z])|Rush:?|Bane:?|Drain:?|Burial Rite:?|Spellboost:?|Ward(?![A-Za-z])|Ambush(?![A-Za-z])|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Accelerate \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Reanimate \((\d{1}|\d{2})\):?|Reanimate (X)|Necromancy:?|Enhance:?|Countdown:?)/g
 	static aliases: Alias = {
 		"succ": "support cannon",
 		"jormongoloid": "jormungand",
@@ -105,7 +106,8 @@ class SVLookup implements MessageHandler {
 		"ffg": "fall from grace",
 		"satan": "prince of darkness",
 		"stan": "prince of darkness",
-		"gun": "god bullet golem"
+		"gun": "god bullet golem",
+		"skill ring": "skull ring"
 
 	};
 	private flagHelp: String = "{{a/cardname}} - display card **a**rt\n" + 
@@ -135,10 +137,15 @@ class SVLookup implements MessageHandler {
 	}
 
 	static rotation_legal(c: Card) {
-		if (c.card_set_id == Set["Darkness Evolved"] || c.card_set_id == Set["Classic"] || c.card_set_id == Set["Rise of Bahamut"]) // this field doesn't exist in the api, maybe implemented later?
-			return false;
-		else
+		if (c.card_set_id == Set["Wonderland Dreams"] || 
+			c.card_set_id == Set["Starforged Legends"] ||
+			c.card_set_id == Set["Chronogenesis"] ||
+			c.card_set_id == Set["Dawnbreak, Nightedge"] ||
+		    c.card_set_id == Set["Chronogenesis"] ||
+			c.card_set_id == Set["Brigade of the Sky"] ||
+			c.card_set_id == Set["Basic Card"]) // this field doesn't exist in the api, maybe implemented later?
 			return true;
+		return false;
 	}
 	
 	static escape(text: String) { // i hate all of this
@@ -147,6 +154,7 @@ class SVLookup implements MessageHandler {
 			.replace(/\\n/g, "\n")
 			.replace(/\\\\/g, "")
 			.replace("&#169;", "©")
+			.replace("----------", "─────────")
 			.replace(r, function (match, grp) {
 				return String.fromCharCode(parseInt(grp, 16));
 			});
@@ -174,7 +182,7 @@ class SVLookup implements MessageHandler {
 			return;
 		
 		content = content.toLowerCase();
-		const matches = content.match(/{{[a-z0-9-\+',\?\/\s\(\)]+}}/g);
+		const matches = content.match(/{{[a-z0-9-\+',\?!\/\s\(\)]+}}/g);
 		if (matches == null)
 			return;
 
@@ -263,19 +271,22 @@ class SVLookup implements MessageHandler {
 				await this.sendError(`"${target}" doesn't match any cards. Check for spelling errors?`, "", discordInfo);
 				continue;
 			}
-			const uniqueCards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], []);
 			let card;
-			if (uniqueCards.length > 1) {
-				const exactMatches = uniqueCards.filter(x => x.card_name.toLowerCase() == target.toLowerCase());
-				const fullWordMatches = uniqueCards.filter(x => x.card_name.toLowerCase().match(`(^|\\s)${target}($|\\s)`));
-				console.log(fullWordMatches);
-				if (fullWordMatches.length == 1)
-					card = fullWordMatches[0];
-				if (exactMatches.length == 1)
-					card = exactMatches[0];
+			if (cards.length > 1) {
+				let fullword = cards.filter(x => x.card_name.toLowerCase().match(`(^|\\s)${target},?($|\\s)`));
+				if (fullword.length > 0)
+					cards = fullword;
+				console.log(cards);
+				if (cards.length > 1)
+					cards = cards.filter(x => x.card_set_id != 90000);
+				console.log(cards);
+				cards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_set_id > val.card_set_id) ? acc : [val], []);
+				if (cards.length == 1)
+					card = cards[0];
+				console.log(cards);
 				if (!card) {
-					if (uniqueCards.length <= 6) {
-						const matchTitles = uniqueCards.reduce<string>((acc, val) => acc + "- " + val.card_name + "\n", "");
+					if (cards.length <= 6) {
+						const matchTitles = cards.reduce<string>((acc, val) => acc + "- " + val.card_name + "\n", "");
 						await this.sendError(`"${target}" matches multiple cards. Could you be more specific?`, matchTitles, discordInfo);
 					} else {
 						await this.sendError(`"${target}" matches a large number of cards. Could you be more specific?`, "", discordInfo);
@@ -283,7 +294,7 @@ class SVLookup implements MessageHandler {
 					continue;
 				}
 			} else {
-				card = uniqueCards[0];
+				card = cards[0];
 			}
 
 			let copiedCard = Object.assign({}, card);
@@ -378,7 +389,8 @@ class SVLookup implements MessageHandler {
 							if (card.base_card_id != card.normal_card_id) {
 								let baseID = card.base_card_id; // TODO: filter syntax
 								let realcard = this._cards.filter(x => x.card_id == baseID)[0];
-								description += `\n_This card is treated as ${realcard.card_name}._`;
+								if (realcard.card_name != card.card_name)
+									description += `\n_This card is treated as ${realcard.card_name}._`;
 							}
 							description += `\n\n${card.pretty_skill_disc}`;
 							embed.setDescription(description);
