@@ -13,8 +13,6 @@ interface Card {
 	tribe_name: string,
 	skill_disc: string,
 	evo_skill_disc: string,
-	pretty_skill_disc: string,
-	pretty_evo_skill_disc: string,
 	cost: number,
 	atk: number,
 	life: number,
@@ -28,7 +26,12 @@ interface Card {
 	base_card_id: number,
 	normal_card_id: number,
 	use_red_ether: number,
-	format_type: boolean
+	format_type: boolean,
+	org_skill_disc: string,
+	org_evo_skill_disc: string,
+	restricted_count: number,
+	skill: string,
+	skill_option: string
 }
 
 interface CardCount {
@@ -75,7 +78,6 @@ enum Set {
 class SVLookup implements MessageHandler {
 
 	private _cards: Card[];
-	static keywords = /(Choose:|Choose -|Clash:?|Storm(?![A-Za-z])|Rush:?|Bane:?|Drain:?|Burial Rite:?|Spellboost:?|Ward(?![A-Za-z])|Ambush(?![A-Za-z])|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Accelerate \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Reanimate \((\d{1}|\d{2})\):?|Reanimate (X)|Necromancy:?|Enhance:?|Countdown:?)/g
 	static aliases: Alias = {
 		"succ": "support cannon",
 		"jormongoloid": "jormungand",
@@ -116,7 +118,8 @@ class SVLookup implements MessageHandler {
 		"{{l/cardname}} - display **l**ore / flavor text\n" +
 		"{{s/text}} - **s**earch card text\n" +
 		"{{sr/text}} - **s**earch **r**otation cards\n" +
-		"{{d/deckcode}} - Display **d**eck"
+		"{{d/deckcode}} - Display **d**eck" +
+		"{{sc/deckcode}} - Show card **sc**ript"
 	
 	private constructor(cards: Card[]) {
 		this._cards = cards;
@@ -128,8 +131,8 @@ class SVLookup implements MessageHandler {
 		const cards = json.data.cards as Card[];
 		for (let c of cards) { // keyword highlighting and dealing with malformed api data
 			c.card_name = c.card_name.replace("\\", "").trim();
-			c.pretty_skill_disc = SVLookup.escape(c.skill_disc).replace(SVLookup.keywords, "**$&**").trim();
-			c.pretty_evo_skill_disc = SVLookup.escape(c.evo_skill_disc).replace(SVLookup.keywords, "**$&**").replace(/\n\(This card will be treated as .*$/g, "").trim();
+			c.org_skill_disc = SVLookup.orgescape(c.org_skill_disc).trim();
+			c.org_evo_skill_disc = SVLookup.orgescape(c.org_evo_skill_disc).replace(/\n\(This card will be treated as .*$/g, "").trim();
 			c.description = SVLookup.escape(c.description);
 			c.evo_description = SVLookup.escape(c.evo_description)
 		}
@@ -140,6 +143,15 @@ class SVLookup implements MessageHandler {
 	static rotation_legal(c: Card) {
 		return c.format_type;
 	}
+
+	static orgescape(text: String) {
+		text = text.replace(/\[\/?b\]\[\/?b\]/g, "")
+			.replace(/\[\/?b\]/g, "**")
+			.replace(/<br>/g, "\n")
+			.replace("----------", "─────────")
+			.replace(/\s\n/g, "\n");
+		return text;
+	}
 	
 	static escape(text: String) { // i hate all of this
 		let r = /\\u([\d\w]{4})/gi;
@@ -148,6 +160,7 @@ class SVLookup implements MessageHandler {
 			.replace(/\\\\/g, "")
 			.replace("&#169;", "©")
 			.replace("----------", "─────────")
+			.replace(/\s\n/, "\n")
 			.replace(r, function (match, grp) {
 				return String.fromCharCode(parseInt(grp, 16));
 			});
@@ -157,7 +170,7 @@ class SVLookup implements MessageHandler {
 	private memes(card: Card) {
 		if (card.card_name == "Jolly Rogers") {
 			card.card_name = "Bane Rogers";
-			card.pretty_skill_disc = SVLookup.escape("Fanfare: Randomly gain Bane, Bane or Bane.").replace(SVLookup.keywords, "**$&**");
+			card.org_skill_disc = "**Fanfare:** Randomly gain **Bane**, **Bane** or **Bane**.";
 		}
 		return card;
 	}
@@ -370,6 +383,14 @@ class SVLookup implements MessageHandler {
 						embed.setDescription("*" + card.description + "*");
 					break;
 				}
+				case "sc": {
+					discordInfo.message.channel.send("Script dump for **" + card.card_name + "** - `" + card.skill + "`\n\n```" + card.skill_option
+						.replace(/,/g, ",\n")
+						.replace(/\(/g, "\n	(")
+						.replace(/&/g, "\n		&") +
+						"```");
+					return;
+				}
 				case "": {
 					let legality = "(Rotation)"
 					if (card.base_card_id != card.normal_card_id) { // alternates now have tossup set IDs, big mess
@@ -397,27 +418,30 @@ class SVLookup implements MessageHandler {
 								if (realcard.card_name != card.card_name)
 									description += `\n_This card is treated as ${realcard.card_name}._`;
 							}
-							description += `\n\n${card.pretty_skill_disc}`;
+							description += `\n\n${card.org_skill_disc}`;
 							embed.setDescription(description);
-							if (card.pretty_evo_skill_disc != card.pretty_skill_disc
-								&& card.pretty_evo_skill_disc != ""
-								&& !(card.pretty_skill_disc.includes(card.pretty_evo_skill_disc))
-								&& card.pretty_evo_skill_disc != "(Same as the unevolved form.)") {
-								embed.addField("Evolved", card.pretty_evo_skill_disc, true);
+							console.log(card);
+							if (card.org_evo_skill_disc != card.org_skill_disc
+								&& card.org_evo_skill_disc != ""
+								&& !(card.org_skill_disc.includes(card.org_evo_skill_disc))
+								&& card.org_evo_skill_disc != "(Same as the unevolved form.)") {
+								embed.addField("Evolved", card.org_evo_skill_disc, true);
 							}
 
 							break;
 						}
 						case 2:
 						case 3: {
-							embed.setDescription(`${card.cost}PP Amulet ${sanitizedTribe}\n\n` + card.pretty_skill_disc);
+							embed.setDescription(`${card.cost}PP Amulet ${sanitizedTribe}\n\n` + card.org_skill_disc);
 							break;
 						}
 						case 4: {
-							embed.setDescription(`${card.cost}PP Spell ${sanitizedTribe}\n\n` + card.pretty_skill_disc);
+							embed.setDescription(`${card.cost}PP Spell ${sanitizedTribe}\n\n` + card.org_skill_disc);
 							break;
 						}
 					}
+					if (card.restricted_count < 3)
+						embed.description = `_Restricted! Limit ${card.restricted_count} cop${(card.restricted_count > 1 ? "ies" : "y")} per deck._\n` + embed.description;
 					break;
 				}
 				default: {
