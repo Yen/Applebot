@@ -10,8 +10,20 @@ import fetch from "node-fetch";
 const offlineThreshold: number = 60;
 let offlinePolls: number = offlineThreshold;
 let lastGame: string;
+let lastCommunityStreams: Stream[] =[];
 
-async function checkStream(type: string, backend: any, discordChannel: string, clientID: string, twitchChannel: string) {
+interface Stream {
+	channel: Channel,
+	game: string,
+}
+
+interface Channel {
+	name: string;
+	status: string;
+	url: string;
+}
+
+async function checkStream(type: string, backend: any, discordChannel: string, clientID: string, twitchChannel: string, community: string) {
 	if (type != "DISCORD")
 		return;
 	const client = backend as Discord.Client;
@@ -40,6 +52,21 @@ async function checkStream(type: string, backend: any, discordChannel: string, c
 	} catch (err) {
 		console.error(err);
 	}
+	try {
+		const request = await fetch(`https://api.twitch.tv/kraken/streams?community_id=${community}`, 
+			{method: "GET", headers: {"Client-ID": clientID, "Accept": "application/vnd.twitchtv.v5+json"}
+		});
+		const json = await request.json();
+		const streams = (json.streams as Stream[]);
+		for (let s of streams) {
+			if ((lastCommunityStreams.filter(x => x.channel.name == s.channel.name).length == 0) && s.channel.name != twitchChannel) {
+				await targetChannel.send(`Community stream: **${s.game}** - *${s.channel.status}*\nWatch at ${s.channel.url}`);
+			}
+		}
+		lastCommunityStreams = streams;
+	} catch (err) {
+		console.error(err);
+	}
 }
 
 function readSettings(): Promise<string | undefined> {
@@ -61,11 +88,13 @@ class TwitchNotifier implements PersistentService {
 	private _discordChannel: string;
 	private _clientID: string;
 	private _twitchChannel: string;
+	private _community: string;
 	
-	private constructor(discordChannel: string, clientID: string, twitchChannel: string) {
+	private constructor(discordChannel: string, clientID: string, twitchChannel: string, community: string) {
 		this._discordChannel = discordChannel;
 		this._clientID = clientID;
 		this._twitchChannel = twitchChannel;
+		this._community = community;
 	}
 	
 	public static async create() {
@@ -76,11 +105,16 @@ class TwitchNotifier implements PersistentService {
 		const discordChannel = JSON.parse(data).discordChannel;
 		const clientID = JSON.parse(data).clientID;
 		const twitchChannel = JSON.parse(data).twitchChannel;
-		return new TwitchNotifier(discordChannel, clientID, twitchChannel);
+		const community = JSON.parse(data).community;
+		return new TwitchNotifier(discordChannel, clientID, twitchChannel, community);
 	}
 
 	async backendInitialized(type: string, backend: any) {
-		setAsyncInterval(() => checkStream(type, backend, this._discordChannel, this._clientID, this._twitchChannel), 30000);
+		const request = await fetch(`https://api.twitch.tv/kraken/communities?name=${encodeURIComponent(this._community)}`, 
+			{method: "GET", headers: {"Client-ID": this._clientID, "Accept": "application/vnd.twitchtv.v5+json"}
+		});
+		const json = await request.json();
+		setAsyncInterval(() => checkStream(type, backend, this._discordChannel, this._clientID, this._twitchChannel, json._id), 30000);
 	}
 
 }
