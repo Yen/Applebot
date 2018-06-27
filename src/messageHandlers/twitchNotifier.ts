@@ -60,7 +60,7 @@ async function checkStream(type: string, backend: any, discordChannel: string, c
 		const streams = (json.streams as Stream[]);
 		for (let s of streams) {
 			if ((lastCommunityStreams.filter(x => x.channel.name == s.channel.name).length == 0) && s.channel.name != twitchChannel) {
-				await targetChannel.send(`Community stream: **${s.game}** - *${s.channel.status}*\nWatch at ${s.channel.url}`);
+				await targetChannel.send(`Community stream: **${s.game}** - *${s.channel.status}*\nWatch at ${s.channel.url}`, {disableEveryone: true});
 			}
 		}
 		lastCommunityStreams = streams;
