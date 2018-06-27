@@ -116,7 +116,7 @@ class SVLookup implements MessageHandler {
 	private flagHelp: String = "{{a/cardname}} - display card **a**rt\n" + 
 		"{{e/cardname}} - **e**volved card art\n" +
 		"{{l/cardname}} - display **l**ore / flavor text\n" +
-		"{{sc/cardname}} - Show card **sc**ript" + 
+		"{{sc/cardname}} - Show card **sc**ript\n" + 
 		"{{s/text}} - **s**earch card text\n" +
 		"{{sr/text}} - **s**earch **r**otation cards\n" +
 		"{{d/deckcode}} - Display **d**eck\n"
