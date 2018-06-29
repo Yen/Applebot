@@ -11,10 +11,16 @@ const offlineThreshold: number = 60;
 let offlinePolls: number = offlineThreshold;
 let lastGame: string;
 let lastCommunityStreams: Stream[] =[];
+let communityStreams: StreamTracker[] = [];
 
 interface Stream {
 	channel: Channel,
 	game: string,
+}
+
+interface StreamTracker {
+	stream: Stream,
+	polls: number
 }
 
 interface Channel {
@@ -52,6 +58,7 @@ async function checkStream(type: string, backend: any, discordChannel: string, c
 	} catch (err) {
 		console.error(err);
 	}
+
 	try {
 		const request = await fetch(`https://api.twitch.tv/kraken/streams?community_id=${community}`, 
 			{method: "GET", headers: {"Client-ID": clientID, "Accept": "application/vnd.twitchtv.v5+json"}
@@ -59,11 +66,22 @@ async function checkStream(type: string, backend: any, discordChannel: string, c
 		const json = await request.json();
 		const streams = (json.streams as Stream[]);
 		for (let s of streams) {
-			if ((lastCommunityStreams.filter(x => x.channel.name == s.channel.name).length == 0) && s.channel.name != twitchChannel) {
+			if ((communityStreams.filter(x => x.stream.channel.name == s.channel.name).length == 0) && s.channel.name != twitchChannel) {
 				await targetChannel.send(`Community stream: **${s.game}** - *${s.channel.status}*\nWatch at ${s.channel.url}`, {disableEveryone: true});
+				communityStreams.push(<StreamTracker>{stream: s, polls: 0});
 			}
 		}
-		lastCommunityStreams = streams;
+		for (let s of communityStreams) {
+			if (streams.filter(x => s.stream.channel.name == x.channel.name).length == 0) {
+				s.polls++;
+			} else {
+				s.polls = 0;
+			}
+			if (s.polls > offlineThreshold) {
+				communityStreams.splice(communityStreams.indexOf(s), 1);
+			}
+		
+		}
 	} catch (err) {
 		console.error(err);
 	}
