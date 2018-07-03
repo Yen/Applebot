@@ -26,7 +26,7 @@ interface Card {
 	base_card_id: number,
 	normal_card_id: number,
 	use_red_ether: number,
-	format_type: boolean,
+	format_type: number,
 	org_skill_disc: string,
 	org_evo_skill_disc: string,
 	restricted_count: number,
@@ -61,6 +61,11 @@ enum Rarity {
 	Legendary
 }
 
+enum PrettyFormat {
+	"Unlimited" = 0,
+	"Rotation" = 1
+}
+
 enum Set {
 	"Basic Card" = 10000,
 	"Classic",
@@ -72,6 +77,7 @@ enum Set {
 	"Chronogenesis",
 	"Dawnbreak, Nightedge",
 	"Brigade of the Sky",
+	"Promotional" = 70000,
 	"Token" = 90000
 }
 
@@ -255,7 +261,7 @@ class SVLookup implements MessageHandler {
 					const deckJson = rawJson.data.deck;
 					const deck = (deckJson.cards as Card[]);
 					const vials = deck.map(x => x.use_red_ether).reduce((a, b) => a + b, 0);
-					const format = deck.every(x => SVLookup.rotation_legal(x) == true) ? "Rotation" : "Unlimited";
+					const format = deck.every(x => x.format_type == 1);
 					embed.setFooter(`Deck code expired? Click the link to generate another.`)
 						.setTitle( `${Craft[deckJson.clan]} Deck - ${target}`)
 						.setFooter(`${format} Format - ${vials} vials - Click link to generate new deck code`)
@@ -282,21 +288,20 @@ class SVLookup implements MessageHandler {
 				let fullword = cards.filter(x => x.card_name.toLowerCase().match(`(^|\\s)${target},?($|\\s)`));
 				if (fullword.length > 0)
 					cards = fullword;
-				console.log(cards);
 				if (cards.length > 1) {
 					let provisional = cards.filter(x => x.card_name.toLowerCase() == target);
 					if (provisional.length > 0)
 						cards = provisional;
 				}
 				if (cards.every(x => x.card_name == cards[0].card_name)) {
-					if (cards.length > 1)
-					cards = cards.filter(x => x.card_set_id != 90000);
-					console.log(cards);
-					cards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_set_id > val.card_set_id) ? acc : [val], []);
+					if (cards.length > 1) {
+						cards = cards.filter(x => x.card_set_id != 90000);
+						cards = cards.filter(x => x.card_set_id.toString()[0] != "7");
+						cards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_set_id > val.card_set_id) ? acc : [val], []);
+					}
 				}
 				if (cards.length == 1)
 					card = cards[0];
-				console.log(cards);
 				if (!card) {
 					if (cards.length <= 6) {
 						cards = cards.filter((obj, pos, arr) => {
@@ -317,6 +322,11 @@ class SVLookup implements MessageHandler {
 			card = this.memes(copiedCard); // keeps meme changes out of card db, not sure if this is 100% the right way
 
 			let cardname = card.card_name; // TODO: figure out why i can't access the card object from filter statements
+			if (card.base_card_id != card.normal_card_id) { // alternates now have tossup set IDs, big mess
+				let baseID = card.base_card_id; // TODO: filter syntax
+				let realcard = this._cards.filter(x => x.card_id == baseID)[0];
+				card.card_set_id = realcard.card_set_id;
+			}
 			let embed = new Discord.RichEmbed().setTitle(card.card_name);
 
 			switch (card.rarity) {
@@ -352,8 +362,6 @@ class SVLookup implements MessageHandler {
 					if (["a3", "e3"].includes(options))
 						alternate = 2;
 					let matches = this._cards.filter(x => x.card_name == cardname).length
-					console.log("FUCK");
-					console.log(matches);
 					if (card.base_card_id != card.normal_card_id) { // alternate reprints (Ta-G, AGRS, etc)
 						let baseID = card.base_card_id; // TODO: filter syntax
 						let newcard = this._cards.filter(x => x.card_id == baseID)[0];
@@ -395,17 +403,7 @@ class SVLookup implements MessageHandler {
 					return;
 				}
 				case "": {
-					let legality = "(Rotation)"
-					if (card.base_card_id != card.normal_card_id) { // alternates now have tossup set IDs, big mess
-						let baseID = card.base_card_id; // TODO: filter syntax
-						let realcard = this._cards.filter(x => x.card_id == baseID)[0];
-						card.card_set_id = realcard.card_set_id;
-						if (SVLookup.rotation_legal(realcard) == false)
-							legality = "(Unlimited)";
-					} else {
-						if (SVLookup.rotation_legal(card) == false)
-							legality = "(Unlimited)";
-					}
+					let legality = "(" + PrettyFormat[card.format_type] + ")";
 					if (card.card_set_id == Set["Token"])
 						legality = "";
 					let sanitizedTribe = (card.tribe_name == "-") ? "" : `(${card.tribe_name})`;
@@ -423,7 +421,6 @@ class SVLookup implements MessageHandler {
 							}
 							description += `\n\n${card.org_skill_disc}`;
 							embed.setDescription(description);
-							console.log(card);
 							if (card.org_evo_skill_disc != card.org_skill_disc
 								&& card.org_evo_skill_disc != ""
 								&& !(card.org_skill_disc.includes(card.org_evo_skill_disc))
