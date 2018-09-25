@@ -77,6 +77,7 @@ enum Set {
 	"Chronogenesis",
 	"Dawnbreak, Nightedge",
 	"Brigade of the Sky",
+	"Omen of the Ten",
 	"Promotional" = 70000,
 	"Token" = 90000
 }
