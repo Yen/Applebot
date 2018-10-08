@@ -207,17 +207,6 @@ class Markov implements MessageHandler {
 		}
 
 		let response = weightedCandidates[Math.floor(Math.random() * weightedCandidates.length)]; // this might change LOL
-		if (haiku) {
-			var choices = weightedCandidates.map(function (item) {
-					return (item.match(/[a-zA-Z]+/gm).map(function (item) {
-							return syllable(item);
-						})).reduce((a, b) => a + b, 0);
-				});
-			if (choices.indexOf(17) != -1) {
-				response = weightedCandidates[choices.indexOf(17)];
-			}
-
-		}
 		//cleanup
 		response = response.replace(/,$/, "");
 		if (/[!?\.]$/.test(response) == false)
