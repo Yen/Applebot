@@ -47,23 +47,19 @@ class TwitchNotifier implements PersistentService {
 			const targetChannel = client.channels.filter(x => x.id == this._discordChannel).first() as Discord.TextChannel;
 			const targetGuild = targetChannel.guild.id;
 			client.on("presenceUpdate", (oldMember, newMember) => {
-				if (newMember.guild.id != targetGuild)
+				console.log(`${newMember.user.username} → ${newMember.user.presence.status}`);;
+				if (newMember.guild.id != targetGuild) {
+					console.log("wrong guild");
 					return;
-				let askMeIfIGiveAFuck = false;
-				if (oldMember.presence.game) {
-					if (!oldMember.presence.game.streaming)
-						askMeIfIGiveAFuck = true;
-				} else {
-					askMeIfIGiveAFuck = true;
 				}
-				if (newMember.presence.game && askMeIfIGiveAFuck) {
+				if (newMember.presence.game) {
 					if (newMember.presence.game.streaming) {
 						console.log(`${newMember.user.username} → ${newMember.user.presence.status}`);
 						console.log("last seen: " + debouncer[newMember.user.id]);
 						if (((Date.now() - (debouncer[newMember.user.id] || 0)) / 1000 / 60) >= 30) {
 							let username = newMember.user.presence.game.url.substring(newMember.user.presence.game.url.lastIndexOf("/") + 1);
 							if (this._twitchChannel == username) {
-								targetChannel.send(`@everyone :tyroneW: STRIM: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`);
+								targetChannel.send(`@everyone TYRON STREAM :D?\n**${newMember.presence.game.name}** — ${newMember.presence.game.url}`);
 							} else {
 								targetChannel.send(`**${newMember.user.username}** is now streaming: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`, { disableEveryone: true });
 							}
@@ -72,6 +68,8 @@ class TwitchNotifier implements PersistentService {
 						}
 						debouncer[newMember.user.id] = Date.now();
 					}
+				} else {
+					console.log("no game");
 				}
 			});
 		});
