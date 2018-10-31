@@ -45,7 +45,10 @@ class TwitchNotifier implements PersistentService {
 		let debouncer: { [user: string]: number } = {};
 		client.on('ready', () => {
 			const targetChannel = client.channels.filter(x => x.id == this._discordChannel).first() as Discord.TextChannel;
+			const targetGuild = targetChannel.guild.id;
 			client.on("presenceUpdate", (oldMember, newMember) => {
+				if (newMember.guild.id != targetGuild)
+					return;
 				let askMeIfIGiveAFuck = false;
 				if (oldMember.presence.game) {
 					if (!oldMember.presence.game.streaming)
