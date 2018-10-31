@@ -58,28 +58,21 @@ class TwitchNotifier implements PersistentService {
 			}
 			if (newMember.presence.game && askMeIfIGiveAFuck) {
 				if (newMember.presence.game.streaming) {
-					if (debouncer[newMember.user.id]) {
-						console.log("skipping because not seen");
-					} else {
-						if (((Date.now() - debouncer[newMember.user.id]) / 1000 / 60) <= 30) {
-							let username = newMember.user.presence.game.url.substring(newMember.user.presence.game.url.lastIndexOf("/") + 1);
-							if (this._twitchChannel == username) {
-								targetChannel.send(`@everyone :tyroneW: STRIM: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`);
-							} else {
-								targetChannel.send(`**${newMember.user.username}** is now streaming: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`, {disableEveryone: true});
-							}
+					if (((Date.now() - (debouncer[newMember.user.id] || 0)) / 1000 / 60) <= 30) {
+						let username = newMember.user.presence.game.url.substring(newMember.user.presence.game.url.lastIndexOf("/") + 1);
+						if (this._twitchChannel == username) {
+							targetChannel.send(`@everyone :tyroneW: STRIM: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`);
 						} else {
-							console.log("skipping because too soon");
+							targetChannel.send(`**${newMember.user.username}** is now streaming: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`, { disableEveryone: true });
 						}
-
+					} else {
+						console.log("skipping because too soon");
 					}
-					debouncer[newMember.user.id] = Date.now();
 				}
-
+				debouncer[newMember.user.id] = Date.now();
 			}
 		});
 	}
-
 }
 
 export default TwitchNotifier;
