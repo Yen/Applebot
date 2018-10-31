@@ -47,9 +47,7 @@ class TwitchNotifier implements PersistentService {
 			const targetChannel = client.channels.filter(x => x.id == this._discordChannel).first() as Discord.TextChannel;
 			const targetGuild = targetChannel.guild.id;
 			client.on("presenceUpdate", (oldMember, newMember) => {
-				console.log(`${newMember.user.username} → ${newMember.user.presence.status}`);;
 				if (newMember.guild.id != targetGuild) {
-					console.log("wrong guild");
 					return;
 				}
 				if (newMember.presence.game) {
