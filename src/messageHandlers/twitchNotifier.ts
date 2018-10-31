@@ -6,86 +6,7 @@ import DiscordExtendedInfo from "../extendedInfos/discordExtendedInfo";
 import * as fs from "fs";
 import * as Discord from "discord.js";
 import fetch from "node-fetch";
-
-const offlineThreshold: number = 60;
-let offlinePolls: number = offlineThreshold;
-let lastGame: string;
-let lastCommunityStreams: Stream[] =[];
-let communityStreams: StreamTracker[] = [];
-
-interface Stream {
-	channel: Channel,
-	game: string,
-}
-
-interface StreamTracker {
-	stream: Stream,
-	polls: number
-}
-
-interface Channel {
-	name: string;
-	status: string;
-	url: string;
-}
-
-async function checkStream(type: string, backend: any, discordChannel: string, clientID: string, twitchChannel: string, community: string) {
-	if (type != "DISCORD")
-		return;
-	const client = backend as Discord.Client;
-	const targetChannel = client.channels.filter(x => x.id == discordChannel).first() as Discord.TextChannel;
-	try {
-		const dateThen = Date.now();
-		const request = await fetch(`https://api.twitch.tv/kraken/streams/${twitchChannel}`, 
-			{method: "GET", headers: {"Client-ID": clientID}
-		});
-		const json = await request.json();
-		if (json.stream == null) {
-			offlinePolls++;
-			if (offlinePolls == offlineThreshold) {
-				// await targetChannel.send("Stream offline.");
-			}
-		} else {
-			if (offlinePolls >= offlineThreshold) {
-				await targetChannel.send(`@everyone Now live: **${json.stream.game}** - *${json.stream.channel.status}*\nWatch at https://twitch.tv/${twitchChannel}`);
-			} else {
-				if (json.stream.game != lastGame)
-					await targetChannel.send(`@here Game changed: **${json.stream.game}** - *${json.stream.channel.status}*\nWatch at https://twitch.tv/${twitchChannel}`);
-			}
-			lastGame = json.stream.game;
-			offlinePolls = 0;
-		}
-	} catch (err) {
-		console.error(err);
-	}
-
-	try {
-		const request = await fetch(`https://api.twitch.tv/kraken/streams?community_id=${community}`, 
-			{method: "GET", headers: {"Client-ID": clientID, "Accept": "application/vnd.twitchtv.v5+json"}
-		});
-		const json = await request.json();
-		const streams = (json.streams as Stream[]);
-		for (let s of streams) {
-			if ((communityStreams.filter(x => x.stream.channel.name == s.channel.name).length == 0) && s.channel.name != twitchChannel) {
-				await targetChannel.send(`Community stream: **${s.game}** - *${s.channel.status}*\nWatch at ${s.channel.url}`, {disableEveryone: true});
-				communityStreams.push(<StreamTracker>{stream: s, polls: 0});
-			}
-		}
-		for (let s of communityStreams) {
-			if (streams.filter(x => s.stream.channel.name == x.channel.name).length == 0) {
-				s.polls++;
-			} else {
-				s.polls = 0;
-			}
-			if (s.polls > offlineThreshold) {
-				communityStreams.splice(communityStreams.indexOf(s), 1);
-			}
-		
-		}
-	} catch (err) {
-		console.error(err);
-	}
-}
+import { userInfo } from "os";
 
 function readSettings(): Promise<string | undefined> {
 	return new Promise(resolve => {
@@ -104,35 +25,59 @@ const setAsyncInterval = (callback: () => Promise<void>, delay: number) => setIn
 class TwitchNotifier implements PersistentService {
 
 	private _discordChannel: string;
-	private _clientID: string;
 	private _twitchChannel: string;
-	private _community: string;
-	
-	private constructor(discordChannel: string, clientID: string, twitchChannel: string, community: string) {
+
+	private constructor(discordChannel: string, twitchChannel: string) {
 		this._discordChannel = discordChannel;
-		this._clientID = clientID;
 		this._twitchChannel = twitchChannel;
-		this._community = community;
 	}
-	
+
 	public static async create() {
 		const data = await readSettings();
 		if (data == undefined) {
 			return undefined;
 		}
 		const discordChannel = JSON.parse(data).discordChannel;
-		const clientID = JSON.parse(data).clientID;
 		const twitchChannel = JSON.parse(data).twitchChannel;
-		const community = JSON.parse(data).community;
-		return new TwitchNotifier(discordChannel, clientID, twitchChannel, community);
+		return new TwitchNotifier(discordChannel, twitchChannel);
 	}
 
 	async backendInitialized(type: string, backend: any) {
-		const request = await fetch(`https://api.twitch.tv/kraken/communities?name=${encodeURIComponent(this._community)}`, 
-			{method: "GET", headers: {"Client-ID": this._clientID, "Accept": "application/vnd.twitchtv.v5+json"}
+		const client = backend as Discord.Client;
+		let debouncer: { [user: string]: number } = {};
+		const targetChannel = client.channels.filter(x => x.id == this._discordChannel).first() as Discord.TextChannel;
+		client.on("presenceUpdate", (oldMember, newMember) => {
+			console.log(`${newMember.user.username} → ${newMember.user.presence.status}`);
+			console.log("last seen: " + debouncer[newMember.user.id]);
+			let askMeIfIGiveAFuck = false;
+			if (oldMember.presence.game) {
+				if (!oldMember.presence.game.streaming)
+					askMeIfIGiveAFuck = true;
+			} else {
+				askMeIfIGiveAFuck = true;
+			}
+			if (newMember.presence.game && askMeIfIGiveAFuck) {
+				if (newMember.presence.game.streaming) {
+					if (debouncer[newMember.user.id]) {
+						console.log("skipping because not seen");
+					} else {
+						if (((Date.now() - debouncer[newMember.user.id]) / 1000 / 60) <= 30) {
+							let username = newMember.user.presence.game.url.substring(newMember.user.presence.game.url.lastIndexOf("/") + 1);
+							if (this._twitchChannel == username) {
+								targetChannel.send(`@everyone :tyroneW: STRIM: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`);
+							} else {
+								targetChannel.send(`**${newMember.user.username}** is now streaming: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`, {disableEveryone: true});
+							}
+						} else {
+							console.log("skipping because too soon");
+						}
+
+					}
+					debouncer[newMember.user.id] = Date.now();
+				}
+
+			}
 		});
-		const json = await request.json();
-		setAsyncInterval(() => checkStream(type, backend, this._discordChannel, this._clientID, this._twitchChannel, json._id), 30000);
 	}
 
 }
