@@ -5,8 +5,6 @@ import MessageFloodgate from "../messageFloodgate";
 import DiscordExtendedInfo from "../extendedInfos/discordExtendedInfo";
 import * as fs from "fs";
 import * as Discord from "discord.js";
-import fetch from "node-fetch";
-import { userInfo } from "os";
 
 function readSettings(): Promise<string | undefined> {
 	return new Promise(resolve => {
@@ -46,31 +44,33 @@ class TwitchNotifier implements PersistentService {
 		const client = backend as Discord.Client;
 		let debouncer: { [user: string]: number } = {};
 		const targetChannel = client.channels.filter(x => x.id == this._discordChannel).first() as Discord.TextChannel;
-		client.on("presenceUpdate", (oldMember, newMember) => {
-			console.log(`${newMember.user.username} → ${newMember.user.presence.status}`);
-			console.log("last seen: " + debouncer[newMember.user.id]);
-			let askMeIfIGiveAFuck = false;
-			if (oldMember.presence.game) {
-				if (!oldMember.presence.game.streaming)
+		client.on('ready', () => {
+			client.on("presenceUpdate", (oldMember, newMember) => {
+				console.log(`${newMember.user.username} → ${newMember.user.presence.status}`);
+				console.log("last seen: " + debouncer[newMember.user.id]);
+				let askMeIfIGiveAFuck = false;
+				if (oldMember.presence.game) {
+					if (!oldMember.presence.game.streaming)
+						askMeIfIGiveAFuck = true;
+				} else {
 					askMeIfIGiveAFuck = true;
-			} else {
-				askMeIfIGiveAFuck = true;
-			}
-			if (newMember.presence.game && askMeIfIGiveAFuck) {
-				if (newMember.presence.game.streaming) {
-					if (((Date.now() - (debouncer[newMember.user.id] || 0)) / 1000 / 60) <= 30) {
-						let username = newMember.user.presence.game.url.substring(newMember.user.presence.game.url.lastIndexOf("/") + 1);
-						if (this._twitchChannel == username) {
-							targetChannel.send(`@everyone :tyroneW: STRIM: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`);
-						} else {
-							targetChannel.send(`**${newMember.user.username}** is now streaming: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`, { disableEveryone: true });
-						}
-					} else {
-						console.log("skipping because too soon");
-					}
 				}
-				debouncer[newMember.user.id] = Date.now();
-			}
+				if (newMember.presence.game && askMeIfIGiveAFuck) {
+					if (newMember.presence.game.streaming) {
+						if (((Date.now() - (debouncer[newMember.user.id] || 0)) / 1000 / 60) <= 30) {
+							let username = newMember.user.presence.game.url.substring(newMember.user.presence.game.url.lastIndexOf("/") + 1);
+							if (this._twitchChannel == username) {
+								targetChannel.send(`@everyone :tyroneW: STRIM: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`);
+							} else {
+								targetChannel.send(`**${newMember.user.username}** is now streaming: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`, { disableEveryone: true });
+							}
+						} else {
+							console.log("skipping because too soon");
+						}
+					}
+					debouncer[newMember.user.id] = Date.now();
+				}
+			});
 		});
 	}
 }
