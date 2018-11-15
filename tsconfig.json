@@ -5,6 +5,7 @@
 
         "sourceMap": true,
         "strict": true,
+        "downlevelIteration": true,
 
         "target": "es5",
         "lib": [

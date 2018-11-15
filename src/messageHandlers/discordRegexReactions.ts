@@ -39,7 +39,7 @@ class DiscordRegexReactions implements MessageHandler {
 			}
 		}
 
-		for (const reaction in reactions) {
+		for (const reaction of reactions) {
 			await discordInfo.message.react(reaction);
 		}
 	}
