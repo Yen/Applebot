@@ -75,7 +75,7 @@ class Quotes implements MessageHandler {
 				if (this._quotes.length > 0) {
 					const randomIndex = Math.floor(Math.random() * this._quotes.length);
 					const randomQuote = this._quotes[randomIndex];
-					await responder(`(#${randomIndex + 1}) ${randomQuote.response}`);
+					await responder(`${randomQuote.response} [#${randomIndex + 1}]`);
 				} else {
 					await responder('There are no saved quotes. Add one with "!quote add".');
 				}
@@ -138,7 +138,7 @@ class Quotes implements MessageHandler {
 						if (args[1].substring(0,1) == "#") { // specific
 							const targetIndex = Number(args[1].substring(1));
 							if (Number.isInteger(targetIndex) && targetIndex > 0 && targetIndex <= this._quotes.length) {
-								await responder(`(#${targetIndex}) ${this._quotes[targetIndex - 1].response}`);
+								await responder(`${this._quotes[targetIndex - 1].response} [#${targetIndex}]`);
 								break;
 							} else {
 								await responder("Couldn't find a quote with that index.");
@@ -151,7 +151,7 @@ class Quotes implements MessageHandler {
 								const randomIndex = Math.floor(Math.random() * matches.length);
 								const randomQuote = matches[randomIndex];
 								const index = this._quotes.indexOf(randomQuote);
-								await responder(`(#${index + 1}) ${randomQuote.response}`);
+								await responder(`${randomQuote.response} [#${index + 1}]`);
 							} else {
 								await responder("No quotes found. For a specific quote, use the # symbol.");
 								break;

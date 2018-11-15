@@ -13,8 +13,6 @@ interface Card {
 	tribe_name: string,
 	skill_disc: string,
 	evo_skill_disc: string,
-	pretty_skill_disc: string,
-	pretty_evo_skill_disc: string,
 	cost: number,
 	atk: number,
 	life: number,
@@ -27,7 +25,13 @@ interface Card {
 	evo_description: string,
 	base_card_id: number,
 	normal_card_id: number,
-	use_red_ether: number
+	use_red_ether: number,
+	format_type: number,
+	org_skill_disc: string,
+	org_evo_skill_disc: string,
+	restricted_count: number,
+	skill: string,
+	skill_option: string
 }
 
 interface CardCount {
@@ -57,6 +61,11 @@ enum Rarity {
 	Legendary
 }
 
+enum PrettyFormat {
+	"Unlimited" = 0,
+	"Rotation" = 1
+}
+
 enum Set {
 	"Basic Card" = 10000,
 	"Classic",
@@ -66,17 +75,21 @@ enum Set {
 	"Wonderland Dreams",
 	"Starforged Legends",
 	"Chronogenesis",
+	"Dawnbreak, Nightedge",
+	"Brigade of the Sky",
+	"Omen of the Ten",
+	"Promotional" = 70000,
 	"Token" = 90000
 }
 
 class SVLookup implements MessageHandler {
 
 	private _cards: Card[];
-	static keywords = /(Clash:?|Storm:?|Rush:?|Bane:?|Drain:?|Spellboost:?|Ward:?|Fanfare:?|Last Words:?|Evolve:|Earth Rite:?|Overflow:?|Vengeance:?|Evolve:?|Resonance:?|Necromancy \((\d{1}|\d{2})\):?|Enhance \((\d{1}|\d{2})\):?|Countdown \((\d{1}|\d{2})\):?|Necromancy:?|Enhance:?|Countdown:?)/g
 	static aliases: Alias = {
 		"succ": "support cannon",
 		"jormongoloid": "jormungand",
 		"jungle albert": "jungle warden",
+		"shadow albert": "underworld ruler aisha",
 		"caboose": "carabosse",
 		"weebblader": "ta-g, katana unsheathed",
 		"antiguy": "hero of antiquity",
@@ -93,14 +106,27 @@ class SVLookup implements MessageHandler {
 		"coc": "call of cocytus",
 		"sibyl 2": "ceres of the night",
 		"gas bird": "andrealphus",
-		"peacock": "andrealphus"
+		"peacock": "andrealphus",
+		"tempest lancer": "lancer of the tempest",
+		"tribunal of rigged evil": "tribunal of good and evil",
+		"ptp": "path to purgatory",
+		"bnb": "beauty and the beast",
+		"the wife": "hot garbage",
+		"aurelia alter": "darksaber melissa",
+		"ffg": "fall from grace",
+		"satan": "prince of darkness",
+		"stan": "prince of darkness",
+		"gun": "god bullet golem",
+		"skill ring": "skull ring"
+
 	};
 	private flagHelp: String = "{{a/cardname}} - display card **a**rt\n" + 
 		"{{e/cardname}} - **e**volved card art\n" +
 		"{{l/cardname}} - display **l**ore / flavor text\n" +
+		"{{sc/cardname}} - Show card **sc**ript\n" + 
 		"{{s/text}} - **s**earch card text\n" +
 		"{{sr/text}} - **s**earch **r**otation cards\n" +
-		"{{d/deckcode}} - Display **d**eck"
+		"{{d/deckcode}} - Display **d**eck\n"
 	
 	private constructor(cards: Card[]) {
 		this._cards = cards;
@@ -112,8 +138,8 @@ class SVLookup implements MessageHandler {
 		const cards = json.data.cards as Card[];
 		for (let c of cards) { // keyword highlighting and dealing with malformed api data
 			c.card_name = c.card_name.replace("\\", "").trim();
-			c.pretty_skill_disc = SVLookup.escape(c.skill_disc).replace(SVLookup.keywords, "**$&**").trim();
-			c.pretty_evo_skill_disc = SVLookup.escape(c.evo_skill_disc).replace(SVLookup.keywords, "**$&**").replace(/\n\(This card will be treated as .*$/g, "").trim();
+			c.org_skill_disc = SVLookup.orgescape(c.org_skill_disc).trim();
+			c.org_evo_skill_disc = SVLookup.orgescape(c.org_evo_skill_disc).replace(/\n\(This card will be treated as .*$/g, "").trim();
 			c.description = SVLookup.escape(c.description);
 			c.evo_description = SVLookup.escape(c.evo_description)
 		}
@@ -122,10 +148,16 @@ class SVLookup implements MessageHandler {
 	}
 
 	static rotation_legal(c: Card) {
-		if (c.card_set_id == Set["Darkness Evolved"] || c.card_set_id == Set["Classic"]) // this field doesn't exist in the api, maybe implemented later?
-			return false;
-		else
-			return true;
+		return c.format_type;
+	}
+
+	static orgescape(text: String) {
+		text = text.replace(/\[\/?b\]\[\/?b\]/g, "")
+			.replace(/\[\/?b\]/g, "**")
+			.replace(/<br>/g, "\n")
+			.replace("----------", "─────────")
+			.replace(/\s\n/g, "\n");
+		return text;
 	}
 	
 	static escape(text: String) { // i hate all of this
@@ -134,6 +166,8 @@ class SVLookup implements MessageHandler {
 			.replace(/\\n/g, "\n")
 			.replace(/\\\\/g, "")
 			.replace("&#169;", "©")
+			.replace("----------", "─────────")
+			.replace(/\s\n/, "\n")
 			.replace(r, function (match, grp) {
 				return String.fromCharCode(parseInt(grp, 16));
 			});
@@ -143,7 +177,7 @@ class SVLookup implements MessageHandler {
 	private memes(card: Card) {
 		if (card.card_name == "Jolly Rogers") {
 			card.card_name = "Bane Rogers";
-			card.skill_disc = SVLookup.escape("Fanfare: Randomly gain Bane, Bane or Bane.").replace(SVLookup.keywords, "**$&**");
+			card.org_skill_disc = "**Fanfare:** Randomly gain **Bane**, **Bane** or **Bane**.";
 		}
 		return card;
 	}
@@ -161,16 +195,19 @@ class SVLookup implements MessageHandler {
 			return;
 		
 		content = content.toLowerCase();
-		const matches = content.match(/{{[a-z0-9-\+',\?\/\s]+}}/g);
+		const matches = content.match(/{{[a-z0-9-\+',\?!\/\s\(\)]+}}/g);
 		if (matches == null)
 			return;
 
 		for (let m of matches) {
-			const optionMatches = m.match(/[a-z0-9]+(?=\/)/);
+			let target = m.slice(2, -2)
+			const optionMatches = target.match(/^[a-z0-9]{1,2}(?=\/)/);
 			let options = "";
-			if (optionMatches != null)
+			if (optionMatches != null) {
 				options = optionMatches[0].toString();
-			let target = m.slice(2, -2).replace(options + "/", "");
+				target = target.replace(options + "/", "");
+			}
+
 			const discordInfo = info as DiscordExtendedInfo;
 
 			if ((target == "help" || target == "?") && options == "") {
@@ -179,7 +216,11 @@ class SVLookup implements MessageHandler {
 			}
 
 			if (options == "s" || options == "sr") {
-				let results = this._cards.filter(x => x.skill_disc.toLowerCase().includes(target) || x.evo_skill_disc.toLowerCase().includes(target))
+				let results = this._cards.filter(x => 
+						x.skill_disc.toLowerCase().includes(target) ||
+						x.evo_skill_disc.toLowerCase().includes(target) ||
+						x.tribe_name.toLowerCase().includes(target) || 
+						x.card_name.toLowerCase().includes(target))
 					.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], []);
 				if (options == "sr")
 					results = results.filter(x => SVLookup.rotation_legal(x));
@@ -203,7 +244,6 @@ class SVLookup implements MessageHandler {
 								break;
 							}
 						}
-
 					}
 					if (!earlyout)
 						await discordInfo.message.channel.send({embed});
@@ -222,7 +262,7 @@ class SVLookup implements MessageHandler {
 					const deckJson = rawJson.data.deck;
 					const deck = (deckJson.cards as Card[]);
 					const vials = deck.map(x => x.use_red_ether).reduce((a, b) => a + b, 0);
-					const format = deck.every(x => SVLookup.rotation_legal(x) == true) ? "Rotation" : "Unlimited";
+					const format = deck.every(x => x.format_type == 1);
 					embed.setFooter(`Deck code expired? Click the link to generate another.`)
 						.setTitle( `${Craft[deckJson.clan]} Deck - ${target}`)
 						.setFooter(`${format} Format - ${vials} vials - Click link to generate new deck code`)
@@ -244,15 +284,31 @@ class SVLookup implements MessageHandler {
 				await this.sendError(`"${target}" doesn't match any cards. Check for spelling errors?`, "", discordInfo);
 				continue;
 			}
-			const uniqueCards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_name == val.card_name) ? acc : [...acc, val], []);
 			let card;
-			if (uniqueCards.length > 1) {
-				const exactMatches = uniqueCards.filter(x => x.card_name.toLowerCase() == target.toLowerCase());
-				if (exactMatches.length == 1)
-					card = exactMatches[0];
-				else {
-					if (uniqueCards.length <= 6) {
-						const matchTitles = uniqueCards.reduce<string>((acc, val) => acc + "- " + val.card_name + "\n", "");
+			if (cards.length > 1) {
+				let fullword = cards.filter(x => x.card_name.toLowerCase().match(`(^|\\s)${target},?($|\\s)`));
+				if (fullword.length > 0)
+					cards = fullword;
+				if (cards.length > 1) {
+					let provisional = cards.filter(x => x.card_name.toLowerCase() == target);
+					if (provisional.length > 0)
+						cards = provisional;
+				}
+				if (cards.every(x => x.card_name == cards[0].card_name)) {
+					if (cards.length > 1) {
+						cards = cards.filter(x => x.card_set_id != 90000);
+						cards = cards.filter(x => x.card_set_id.toString()[0] != "7");
+						cards = cards.reduce<Card[]>((acc, val) => acc.find(x => x.card_set_id > val.card_set_id) ? acc : [val], []);
+					}
+				}
+				if (cards.length == 1)
+					card = cards[0];
+				if (!card) {
+					if (cards.length <= 6) {
+						cards = cards.filter((obj, pos, arr) => {
+							return arr.map(x => x.card_name).indexOf(obj.card_name) === pos;
+						});;
+						const matchTitles = cards.reduce<string>((acc, val) => acc + "- " + val.card_name + " _(" +  Set[val.card_set_id] + ")_\n", "");
 						await this.sendError(`"${target}" matches multiple cards. Could you be more specific?`, matchTitles, discordInfo);
 					} else {
 						await this.sendError(`"${target}" matches a large number of cards. Could you be more specific?`, "", discordInfo);
@@ -260,13 +316,18 @@ class SVLookup implements MessageHandler {
 					continue;
 				}
 			} else {
-				card = uniqueCards[0];
+				card = cards[0];
 			}
 
 			let copiedCard = Object.assign({}, card);
 			card = this.memes(copiedCard); // keeps meme changes out of card db, not sure if this is 100% the right way
 
 			let cardname = card.card_name; // TODO: figure out why i can't access the card object from filter statements
+			if (card.base_card_id != card.normal_card_id) { // alternates now have tossup set IDs, big mess
+				let baseID = card.base_card_id; // TODO: filter syntax
+				let realcard = this._cards.filter(x => x.card_id == baseID)[0];
+				card.card_set_id = realcard.card_set_id;
+			}
 			let embed = new Discord.RichEmbed().setTitle(card.card_name);
 
 			switch (card.rarity) {
@@ -301,11 +362,14 @@ class SVLookup implements MessageHandler {
 						alternate = 1;
 					if (["a3", "e3"].includes(options))
 						alternate = 2;
-					let matches = cards.filter(x => x.card_name == cardname).length
+					let matches = this._cards.filter(x => x.card_name == cardname).length
 					if (card.base_card_id != card.normal_card_id) { // alternate reprints (Ta-G, AGRS, etc)
 						let baseID = card.base_card_id; // TODO: filter syntax
-						card = this._cards.filter(x => x.card_id == baseID)[0];
-						alternate = 1;
+						let newcard = this._cards.filter(x => x.card_id == baseID)[0];
+						if (newcard.card_name != card.card_name) {
+							alternate = 1;
+							card = newcard;
+						}
 					} else if (alternate != 0 && matches <= alternate) {
 						await this.sendError(`Couldn't find additional art for "${card.card_name}".`, "", discordInfo);
 						continue;
@@ -331,18 +395,16 @@ class SVLookup implements MessageHandler {
 						embed.setDescription("*" + card.description + "*");
 					break;
 				}
+				case "sc": {
+					discordInfo.message.channel.send("Script dump for **" + card.card_name + "** - `" + card.skill + "`\n\n```" + card.skill_option
+						.replace(/,/g, ",\n")
+						.replace(/\(/g, "\n	(")
+						.replace(/&/g, "\n		&") +
+						"```");
+					return;
+				}
 				case "": {
-					let legality = "(Rotation)"
-					if (card.base_card_id != card.normal_card_id) { // alternates now have tossup set IDs, big mess
-						let baseID = card.base_card_id; // TODO: filter syntax
-						let realcard = this._cards.filter(x => x.card_id == baseID)[0];
-						card.card_set_id = realcard.card_set_id;
-						if (SVLookup.rotation_legal(realcard) == false)
-							legality = "(Unlimited)";
-					} else {
-						if (SVLookup.rotation_legal(card) == false)
-							legality = "(Unlimited)";
-					}
+					let legality = "(" + PrettyFormat[card.format_type] + ")";
 					if (card.card_set_id == Set["Token"])
 						legality = "";
 					let sanitizedTribe = (card.tribe_name == "-") ? "" : `(${card.tribe_name})`;
@@ -355,26 +417,32 @@ class SVLookup implements MessageHandler {
 							if (card.base_card_id != card.normal_card_id) {
 								let baseID = card.base_card_id; // TODO: filter syntax
 								let realcard = this._cards.filter(x => x.card_id == baseID)[0];
-								description += `\n_This card is treated as ${realcard.card_name}._`;
+								if (realcard.card_name != card.card_name)
+									description += `\n_This card is treated as ${realcard.card_name}._`;
 							}
-							description += `\n\n${card.pretty_skill_disc}`;
+							description += `\n\n${card.org_skill_disc}`;
 							embed.setDescription(description);
-							if (card.pretty_evo_skill_disc != card.pretty_skill_disc && card.pretty_evo_skill_disc != "" && !(card.pretty_skill_disc.includes(card.pretty_evo_skill_disc))) {
-								embed.addField("Evolved", card.pretty_evo_skill_disc, true);
+							if (card.org_evo_skill_disc != card.org_skill_disc
+								&& card.org_evo_skill_disc != ""
+								&& !(card.org_skill_disc.includes(card.org_evo_skill_disc))
+								&& card.org_evo_skill_disc != "(Same as the unevolved form.)") {
+								embed.addField("Evolved", card.org_evo_skill_disc, true);
 							}
 
 							break;
 						}
 						case 2:
 						case 3: {
-							embed.setDescription(`${card.cost}PP Amulet ${sanitizedTribe}\n\n` + card.pretty_skill_disc);
+							embed.setDescription(`${card.cost}PP Amulet ${sanitizedTribe}\n\n` + card.org_skill_disc);
 							break;
 						}
 						case 4: {
-							embed.setDescription(`${card.cost}PP Spell ${sanitizedTribe}\n\n` + card.pretty_skill_disc);
+							embed.setDescription(`${card.cost}PP Spell ${sanitizedTribe}\n\n` + card.org_skill_disc);
 							break;
 						}
 					}
+					if (card.restricted_count < 3)
+						embed.description = `_Restricted${card.format_type ? " in Unlimited!" : "!"} Limit ${card.restricted_count} cop${(card.restricted_count > 1 ? "ies" : "y")} per deck._\n` + embed.description;
 					break;
 				}
 				default: {

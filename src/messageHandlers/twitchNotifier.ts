@@ -5,42 +5,6 @@ import MessageFloodgate from "../messageFloodgate";
 import DiscordExtendedInfo from "../extendedInfos/discordExtendedInfo";
 import * as fs from "fs";
 import * as Discord from "discord.js";
-import fetch from "node-fetch";
-
-const offlineThreshold: number = 60;
-let offlinePolls: number = offlineThreshold;
-let lastGame: string;
-
-async function checkStream(type: string, backend: any, discordChannel: string, clientID: string, twitchChannel: string) {
-	if (type != "DISCORD")
-		return;
-	const client = backend as Discord.Client;
-	const targetChannel = client.channels.filter(x => x.id == discordChannel).first() as Discord.TextChannel;
-	try {
-		const dateThen = Date.now();
-		const request = await fetch(`https://api.twitch.tv/kraken/streams/${twitchChannel}`, 
-			{method: "GET", headers: {"Client-ID": clientID}
-		});
-		const json = await request.json();
-		if (json.stream == null) {
-			offlinePolls++;
-			if (offlinePolls == offlineThreshold) {
-				// await targetChannel.send("Stream offline.");
-			}
-		} else {
-			if (offlinePolls >= offlineThreshold) {
-				await targetChannel.send(`@everyone Now live: **${json.stream.game}** - *${json.stream.channel.status}*\nWatch at https://twitch.tv/${twitchChannel}`);
-			} else {
-				if (json.stream.game != lastGame)
-					await targetChannel.send(`@here Game changed: **${json.stream.game}** - *${json.stream.channel.status}*\nWatch at https://twitch.tv/${twitchChannel}`);
-			}
-			lastGame = json.stream.game;
-			offlinePolls = 0;
-		}
-	} catch (err) {
-		console.error(err);
-	}
-}
 
 function readSettings(): Promise<string | undefined> {
 	return new Promise(resolve => {
@@ -59,30 +23,55 @@ const setAsyncInterval = (callback: () => Promise<void>, delay: number) => setIn
 class TwitchNotifier implements PersistentService {
 
 	private _discordChannel: string;
-	private _clientID: string;
 	private _twitchChannel: string;
-	
-	private constructor(discordChannel: string, clientID: string, twitchChannel: string) {
+
+	private constructor(discordChannel: string, twitchChannel: string) {
 		this._discordChannel = discordChannel;
-		this._clientID = clientID;
 		this._twitchChannel = twitchChannel;
 	}
-	
+
 	public static async create() {
 		const data = await readSettings();
 		if (data == undefined) {
 			return undefined;
 		}
 		const discordChannel = JSON.parse(data).discordChannel;
-		const clientID = JSON.parse(data).clientID;
 		const twitchChannel = JSON.parse(data).twitchChannel;
-		return new TwitchNotifier(discordChannel, clientID, twitchChannel);
+		return new TwitchNotifier(discordChannel, twitchChannel);
 	}
 
 	async backendInitialized(type: string, backend: any) {
-		setAsyncInterval(() => checkStream(type, backend, this._discordChannel, this._clientID, this._twitchChannel), 30000);
+		const client = backend as Discord.Client;
+		let debouncer: { [user: string]: number } = {};
+		client.on('ready', () => {
+			const targetChannel = client.channels.filter(x => x.id == this._discordChannel).first() as Discord.TextChannel;
+			const targetGuild = targetChannel.guild.id;
+			client.on("presenceUpdate", (oldMember, newMember) => {
+				if (newMember.guild.id != targetGuild) {
+					return;
+				}
+				if (newMember.presence.game) {
+					if (newMember.presence.game.streaming) {
+						console.log(`${newMember.user.username} → ${newMember.user.presence.status}`);
+						console.log("last seen: " + debouncer[newMember.user.id]);
+						if (((Date.now() - (debouncer[newMember.user.id] || 0)) / 1000 / 60) >= 360) {
+							let username = newMember.user.presence.game.url.substring(newMember.user.presence.game.url.lastIndexOf("/") + 1);
+							if (this._twitchChannel == username) {
+								targetChannel.send(`@everyone TYRON STREAM :D?\n**${newMember.presence.game.name}** — ${newMember.presence.game.url}`);
+							} else {
+								targetChannel.send(`**${newMember.user.username}** is now streaming: **${newMember.presence.game.name}** — ${newMember.presence.game.url}`, { disableEveryone: true });
+							}
+						} else {
+							console.log("skipping because too soon");
+						}
+						debouncer[newMember.user.id] = Date.now();
+					}
+				} else {
+					console.log("no game");
+				}
+			});
+		});
 	}
-
 }
 
 export default TwitchNotifier;

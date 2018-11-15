@@ -5,6 +5,23 @@ import MessageFloodgate from "../messageFloodgate";
 import * as sqlite from 'sqlite';
 import * as Discord from "discord.js";
 import DiscordExtendedInfo from "../extendedInfos/discordExtendedInfo";
+import * as fs from "fs";
+
+function readWordFilter(): Promise<string | undefined> {
+	return new Promise((resolve, reject) => {
+		fs.readFile("resources/wordfilter.json", "utf8", (err, data) => {
+			if (err) {
+				if (err.code === "ENOENT") {
+					resolve();
+				} else {
+					reject(err);
+				}
+			} else {
+				resolve(data);
+			}
+		})
+	});
+}
 
 class Markov implements MessageHandler {
 
@@ -17,6 +34,8 @@ class Markov implements MessageHandler {
 
 	private _wordArray: { [id: number]: string };
 	private _idArray: { [word: string]: number };
+
+	private _wordFilter: string[];
 
 	private _emotes: string[] = [":o", ":0", ":v", ":u", ":?", ":o", ":I"];
 	private _names: string[] = ["applebot", "appleb0t", "<@213048998678888448>"];
@@ -31,6 +50,8 @@ class Markov implements MessageHandler {
 		markov._getStarter = await markov._data.prepare("SELECT second_word_id FROM relations WHERE first_word_id = ? ORDER BY RANDOM() LIMIT 1");
 		markov._getNext = await markov._data.prepare("SELECT result_word_id FROM relations WHERE first_word_id = ? AND second_word_id = ? ORDER BY RANDOM() LIMIT 1");
 		markov._getWord = await markov._data.prepare("SELECT * FROM words WHERE word = ? LIMIT 1");
+
+		markov._wordFilter = JSON.parse(await readWordFilter() || "[]").filteredWords as string[];
 
 		markov._wordArray = {};
 		markov._idArray = {};
@@ -73,7 +94,7 @@ class Markov implements MessageHandler {
 
 		//drop weird message
 		for (let arg of args) {
-			if (/^[a-zA-Z0-9\.,!\?’'\- ]+$/.test(arg) == false) {
+			if (/^[a-zA-Z0-9\.,!\?’'\- ]+$/.test(arg) == false || this._wordFilter.some(x => content.includes(x))) {
 				if (forceResponse)
 					await responder("?");
 				return;
@@ -133,8 +154,8 @@ class Markov implements MessageHandler {
 			}
 		}
 
-		//strip low quality messages
-		candidates = candidates.filter(c => !content.includes(c));
+		candidates = candidates.filter(c => !content.includes(c)); //strip low quality messages
+		candidates = candidates.filter(c => !this._wordFilter.some(x => c.includes(x))); //strip messages that would trip wordfilter
 
 		if (candidates.length == 0) {
 			if (forceResponse)
