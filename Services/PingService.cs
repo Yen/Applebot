@@ -35,7 +35,7 @@ namespace Applebot.Services
 
             if (parts.Length >= 1 && parts[0] == "!dead")
             {
-                throw new Exception("Yikes!");
+                // throw new Exception("Yikes!");
             }
         }
     }
