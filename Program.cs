@@ -177,7 +177,7 @@ namespace Applebot
                     (service as IDisposable)?.Dispose();
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(10), ct);
+                await Task.Delay(TimeSpan.FromSeconds(60), ct);
             }
         }
 
