@@ -32,11 +32,6 @@ namespace Applebot.Services
 
                 await message.RespondToSenderAsync(fullMessage, ct);
             }
-
-            if (parts.Length >= 1 && parts[0] == "!dead")
-            {
-                // throw new Exception("Yikes!");
-            }
         }
     }
 }
