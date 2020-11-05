@@ -1,13 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Applebot.Services;
+using Newtonsoft.Json;
 
 namespace Applebot
 {
+    class ProgramSettings
+    {
+        [JsonRequired]
+        public string[] GatewayServices { get; set; }
+
+        [JsonRequired]
+        public string[] GatewayConsumerServices { get; set; }
+
+        [JsonRequired]
+        public string[] BackgroundServices { get; set; }
+    }
+
     class Program
     {
         public static void ServiceLog(Type serviceType, string message)
@@ -17,27 +33,69 @@ namespace Applebot
 
         public static async Task Main(string[] args)
         {
+            var rootCommand = new RootCommand
+            {
+                new Option<DirectoryInfo>(
+                    "--config-dir",
+                    getDefaultValue: () => new DirectoryInfo("./Configurations"),
+                    description: "A path to a directory containing applebot configuration files as defined in the default configurations directory")
+            };
+
+            rootCommand.Handler = CommandHandler.Create<DirectoryInfo>(configDir =>
+            {
+                if (!configDir.Exists)
+                {
+                    throw new Exception($"Specified configuration directory \"{configDir.FullName}\" does not exist");
+                }
+                ConfigurationResolver.ConfigurationsDirectory = configDir;
+            });
+
+            await rootCommand.InvokeAsync(args);
+
             Console.WriteLine("Applebot! 🍎🍎🍎");
+            Console.WriteLine($"Using configrations directory: \"{ConfigurationResolver.ConfigurationsDirectory}\"");
 
             // TODO: this is all pretty jank, ideally we will integrate this with the Microsoft.Extensions.DependencyInjection
             // platform and that will give us a centeralised way to deal with logging and configuration. for now though since
             // its not fully obvious how this is all gonna work we are doing everything ad-hoc, which is very little really
 
-            var gatewayServiceTypes = new HashSet<Type>
-            {
-                typeof(TwitchGatewayService),
-                typeof(DiscordGatewayService),
-            };
+            var programConfig = await ConfigurationResolver.LoadConfigurationAsync<Program, ProgramSettings>();
 
-            var backgroundServiceTypes = new HashSet<Type>
+            IEnumerable<Type> FindServiceTypes<T>(IEnumerable<string> serviceTypeNames)
+                where T : IApplebotService
             {
-                typeof(DiscordStreamNotifier)
-            };
+                var baseType = typeof(T);
+                foreach (var typeName in serviceTypeNames)
+                {
+                    var foundType = Assembly.GetExecutingAssembly().GetType(typeName);
+                    if (foundType == null)
+                    {
+                        throw new Exception($"Specified service type [{typeName}] is not defined in this assembly");
+                    }
 
-            var gatewayConsumerServiceTypes = new HashSet<Type>
+                    if (!foundType.IsAssignableTo(baseType))
+                    {
+                        throw new Exception($"Specified service type [{typeName}] is not derived from [{baseType.Name}] as required");
+                    }
+
+                    if (foundType.GetConstructor(Type.EmptyTypes) == null)
+                    {
+                        throw new Exception($"Specified service type [{typeName}] does not implement a public parameterless constructor");
+                    }
+
+                    yield return foundType;
+                }
+            }
+
+            var gatewayServiceTypes = FindServiceTypes<IGatewayService>(programConfig.GatewayServices.Distinct()).ToArray();
+            var gatewayConsumerServiceTypes = FindServiceTypes<IGatewayConsumerService>(programConfig.GatewayConsumerServices.Distinct()).ToArray();
+            var backgroundServiceTypes = FindServiceTypes<IBackgroundService>(programConfig.BackgroundServices.Distinct()).ToArray();
+
+            if (gatewayServiceTypes.Length == 0)
             {
-                typeof(PingService),
-            };
+                Console.WriteLine("No gateway services defined in program configuration. Application exiting");
+                return;
+            }
 
             using var tokenSource = new CancellationTokenSource();
 

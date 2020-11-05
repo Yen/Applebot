@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Applebot.Services;
 
-namespace Applebot
+namespace Applebot.Services
 {
 
     class DiscordStreamNotifier : IBackgroundService
