@@ -40,7 +40,7 @@ namespace Applebot.Services
 
         public async Task RespondToSenderAsync(string line, CancellationToken ct)
         {
-            await SocketMessage.Channel.SendMessageAsync($"{MentionUtils.MentionUser(SocketMessage.Author.Id)} {line}");
+            await SocketMessage.Channel.SendMessageAsync(line, messageReference: new MessageReference(SocketMessage.Id));
         }
     }
 
