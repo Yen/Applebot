@@ -77,7 +77,7 @@ namespace Applebot.Services
 
         public async Task InitializeAsync(CancellationToken ct)
         {
-            var serviceConfig = await ConfigurationResolver.LoadConfigurationAsync<TwitchGatewayService, TwitchServiceConfiguration>();
+            var serviceConfig = await ResourceResolver.LoadConfigurationAsync<TwitchGatewayService, TwitchServiceConfiguration>();
 
             _Connection = new TcpClient();
             _Connection.NoDelay = true;

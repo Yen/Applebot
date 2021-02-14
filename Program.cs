@@ -38,28 +38,39 @@ namespace Applebot
                 new Option<DirectoryInfo>(
                     "--config-dir",
                     getDefaultValue: () => new DirectoryInfo("./Configurations"),
-                    description: "A path to a directory containing applebot configuration files as defined in the default configurations directory")
+                    description: "A path to a directory containing applebot configuration files as defined in the default configurations directory"),
+                new Option<DirectoryInfo>(
+                    "--runtime-data-dir",
+                    getDefaultValue: () => new DirectoryInfo("./RuntimeData"),
+                    description: "A path to a directory containing applebot runtime data directories")
             };
 
-            rootCommand.Handler = CommandHandler.Create<DirectoryInfo>(configDir =>
+            rootCommand.Handler = CommandHandler.Create<DirectoryInfo, DirectoryInfo>((configDir, runtimeDataDir) =>
             {
                 if (!configDir.Exists)
                 {
                     throw new Exception($"Specified configuration directory \"{configDir.FullName}\" does not exist");
                 }
-                ConfigurationResolver.ConfigurationsDirectory = configDir;
+                ResourceResolver.ConfigurationsDirectory = configDir;
+
+                if (!runtimeDataDir.Exists)
+                {
+                    throw new Exception($"Specified runtime data directory \"{runtimeDataDir.FullName}\" does not exist");
+                }
+                ResourceResolver.RuntimeDataDirectory = runtimeDataDir;
             });
 
             await rootCommand.InvokeAsync(args);
 
             Console.WriteLine("Applebot! 🍎🍎🍎");
-            Console.WriteLine($"Using configrations directory: \"{ConfigurationResolver.ConfigurationsDirectory}\"");
+            Console.WriteLine($"Using configrations directory: \"{ResourceResolver.ConfigurationsDirectory}\"");
+            Console.WriteLine($"Using runtime data directory: \"{ResourceResolver.RuntimeDataDirectory}\"");
 
             // TODO: this is all pretty jank, ideally we will integrate this with the Microsoft.Extensions.DependencyInjection
             // platform and that will give us a centeralised way to deal with logging and configuration. for now though since
             // its not fully obvious how this is all gonna work we are doing everything ad-hoc, which is very little really
 
-            var programConfig = await ConfigurationResolver.LoadConfigurationAsync<Program, ProgramSettings>();
+            var programConfig = await ResourceResolver.LoadConfigurationAsync<Program, ProgramSettings>();
 
             IEnumerable<Type> FindServiceTypes<T>(IEnumerable<string> serviceTypeNames)
                 where T : IApplebotService

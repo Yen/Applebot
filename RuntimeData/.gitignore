@@ -1,0 +1,3 @@
+# For ease of development, ignore everything in here.
+# Services should make sure they can create files themselves on first run if it's required
+!.gitignore

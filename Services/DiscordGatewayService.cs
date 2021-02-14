@@ -70,7 +70,7 @@ namespace Applebot.Services
 
         public async Task InitializeAsync(CancellationToken ct)
         {
-            var serviceConfig = await ConfigurationResolver.LoadConfigurationAsync<DiscordGatewayService, DiscordServiceConfiguration>();
+            var serviceConfig = await ResourceResolver.LoadConfigurationAsync<DiscordGatewayService, DiscordServiceConfiguration>();
 
             var clientConfig = new DiscordSocketConfig
             {
